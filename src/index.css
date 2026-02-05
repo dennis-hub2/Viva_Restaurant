@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Utility class for Carter One heading */
+.font-carter {
+  font-family: "Carter One", cursive;
+}
+.font-poppins {
+  font-family: "Poppins", sans-serif;
+}
+body {
+  background-color: #ffeedd; /* Light peach background */
+}
