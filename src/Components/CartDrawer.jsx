@@ -8,16 +8,16 @@ const CartDrawer = ({
   onRemoveItem,
   onUpdateQuantity,
   onClearCart,
+  onCheckout,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [tableNumber, setTableNumber] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
-      // We no longer call setShowConfirm(false) here to avoid the render error.
-      // Logic below handles this "declaratively".
     }
     return () => {
       document.body.style.overflow = "unset";
@@ -33,8 +33,6 @@ const CartDrawer = ({
     onClearCart();
     setShowConfirm(false);
   };
-
-  const [tableNumber, setTableNumber] = useState("");
 
   return (
     <>
@@ -130,6 +128,7 @@ const CartDrawer = ({
           )}
         </div>
 
+        {/* Table Number Input */}
         <div className="border-t border-gray-100 bg-gray-50/50 p-4">
           <div className="flex items-center justify-center gap-3 text-sm font-bold text-[#332A24]">
             <span className="flex items-center gap-2">
@@ -138,12 +137,10 @@ const CartDrawer = ({
             <input
               type="number"
               min="1"
-              max="5" // Prevents the 'spinner' buttons from going above 5
+              max="5"
               value={tableNumber}
               onChange={(e) => {
                 const val = e.target.value;
-                // Logical check: only update state if value is empty (deleting)
-                // or between 1 and 5
                 if (val === "" || (Number(val) >= 1 && Number(val) <= 5)) {
                   setTableNumber(val);
                 }
@@ -152,7 +149,6 @@ const CartDrawer = ({
               className="w-16 bg-white border-2 border-[#DE6555]/20 rounded-lg py-1 px-2 text-center text-[#DE6555] focus:outline-none focus:border-[#DE6555] focus:ring-2 focus:ring-[#DE6555]/20 transition-all placeholder:text-gray-300 font-black text-lg shadow-sm"
             />
           </div>
-          {/*hint for the customer */}
           <p className="text-[10px] text-center text-gray-400 mt-2 uppercase tracking-widest">
             Required for Robot Delivery
           </p>
@@ -167,14 +163,20 @@ const CartDrawer = ({
                 ${subtotal.toFixed(2)}
               </span>
             </div>
-            <button className="w-full bg-[#DE6555] text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-[0px_4px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_2px_0px_#A54538] transition-all active:translate-y-[4px] active:shadow-none">
-              Checkout
+            {/* CHECKOUT BUTTON */}
+            <button
+              onClick={() => onCheckout(tableNumber)}
+              disabled={!tableNumber}
+              className="w-full bg-[#DE6555] text-white font-bold text-lg py-4 px-8 rounded-2xl shadow-[0px_4px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_2px_0px_#A54538] transition-all active:translate-y-[4px] active:shadow-none disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed flex justify-center items-center gap-2"
+            >
+              {tableNumber
+                ? "Proceed to checkout ➔"
+                : "Enter Table # to Checkout"}
             </button>
           </div>
         )}
 
-        {/* FIXED: CUSTOM CONFIRMATION POPUP */}
-        {/* Derived State check: (showConfirm && isOpen) */}
+        {/* Confirmation Popup */}
         <div
           className={`absolute inset-0 bg-[#332A24]/90 z-[80] flex items-center justify-center p-8 text-center transition-all duration-300 ${
             showConfirm && isOpen
