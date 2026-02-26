@@ -34,6 +34,8 @@ const CartDrawer = ({
     setShowConfirm(false);
   };
 
+  const [tableNumber, setTableNumber] = useState("");
+
   return (
     <>
       {/* Overlay */}
@@ -126,6 +128,34 @@ const CartDrawer = ({
               ))}
             </div>
           )}
+        </div>
+
+        <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+          <div className="flex items-center justify-center gap-3 text-sm font-bold text-[#332A24]">
+            <span className="flex items-center gap-2">
+              <span className="text-lg">🤖</span> Table Number:
+            </span>
+            <input
+              type="number"
+              min="1"
+              max="5" // Prevents the 'spinner' buttons from going above 5
+              value={tableNumber}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Logical check: only update state if value is empty (deleting)
+                // or between 1 and 5
+                if (val === "" || (Number(val) >= 1 && Number(val) <= 5)) {
+                  setTableNumber(val);
+                }
+              }}
+              placeholder="1-5"
+              className="w-16 bg-white border-2 border-[#DE6555]/20 rounded-lg py-1 px-2 text-center text-[#DE6555] focus:outline-none focus:border-[#DE6555] focus:ring-2 focus:ring-[#DE6555]/20 transition-all placeholder:text-gray-300 font-black text-lg shadow-sm"
+            />
+          </div>
+          {/*hint for the customer */}
+          <p className="text-[10px] text-center text-gray-400 mt-2 uppercase tracking-widest">
+            Required for Robot Delivery
+          </p>
         </div>
 
         {/* Footer */}

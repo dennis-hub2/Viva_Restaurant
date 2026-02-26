@@ -33,7 +33,7 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
 
               {/* 3. The Animated Underline */}
               <span
-                className={`absolute bottom-0 left-0 h-[2px] bg-[#3B302B] transition-all duration-300
+                className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
                 ${isActive ? "w-full" : "w-0"}`}
               />
             </a>
