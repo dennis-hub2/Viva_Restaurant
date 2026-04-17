@@ -180,13 +180,13 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
         <footer className="mt-8 flex gap-4">
           <button
             onClick={handleSubmit}
-            className="flex-1 py-3.5 bg-[#FFD700] hover:bg-[#ffeb3b] text-black rounded-xl font-black text-sm shadow-lg shadow-yellow-900/20 transition-all active:scale-95"
+            className="flex-1 py-4 bg-[#FFD700] text-black rounded-2xl font-black text-sm shadow-[0px_4px_0px_#B8860B] hover:translate-y-[1px] hover:shadow-[0px_3px_0px_#B8860B] transition-all active:translate-y-[4px] active:shadow-none"
           >
-            Add Item
+            Confirm & Add Item
           </button>
           <button
             onClick={onClose}
-            className="flex-1 py-3.5 border border-white/10 rounded-xl font-bold text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-all"
+            className="flex-1 py-4 bg-[#2D2D33] text-gray-300 border border-white/10 rounded-2xl font-bold text-sm hover:bg-[#3D3D43] hover:text-white transition-all active:scale-95"
           >
             Cancel
           </button>

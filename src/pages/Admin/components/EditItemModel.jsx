@@ -29,7 +29,39 @@ const FormTextarea = ({ label, value, onChange }) => (
   </div>
 );
 
+const FormSelect = ({ label, value, onChange, options }) => (
+  <div className="flex flex-col gap-2">
+    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+      {label}
+    </label>
+    <select
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-[#2D2D33] border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-[#FFD700]/20 focus:border-[#FFD700]/50 transition-all shadow-inner text-sm appearance-none cursor-pointer"
+    >
+      <option value="" disabled className="text-gray-500">
+        Select category...
+      </option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
 const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
+  const categoryOptions = [
+    "Burgers",
+    "Pasta",
+    "Sushi",
+    "Ramen",
+    "Soups",
+    "Mains",
+    "Starters",
+    "Desserts",
+  ];
   
   const [formData, setFormData] = useState({
     ...item,
@@ -80,32 +112,37 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
         </header>
 
         <div className="p-8 space-y-6">
-          <div className="flex items-center gap-6 mb-2">
-            <div className="w-20 h-20 bg-[#2D2D33] rounded-2xl flex items-center justify-center text-4xl border border-white/5">
-              {formData.icon}
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-2 w-24">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Emoji
+              </label>
+              <input
+                type="text"
+                value={formData.icon || "🍽️"}
+                onChange={(e) =>
+                  setFormData({ ...formData, icon: e.target.value })
+                }
+                className="h-[46px] w-full bg-[#2D2D33] border border-white/5 rounded-xl text-center text-2xl text-white focus:outline-none focus:ring-2 focus:ring-[#FFD700]/20 focus:border-[#FFD700]/50 transition-all shadow-inner"
+              />
             </div>
-            <div className="text-left">
-              <p className="text-sm font-bold text-white">Item Icon</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Prepared for emoji picker.
-              </p>
+
+            <div className="flex-1 text-left">
+              <FormInput
+                label="Item Name"
+                value={formData.name}
+                onChange={(val) => setFormData({ ...formData, name: val })}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-left">
-            <FormInput
-              label="Item Name"
-              value={formData.name}
-              onChange={(val) => setFormData({ ...formData, name: val })}
-            />
-            <FormInput
+            <FormSelect
               label="Category"
+              options={categoryOptions}
               value={formData.category}
               onChange={(val) => setFormData({ ...formData, category: val })}
             />
-          </div>
-
-          <div className="text-left">
             <FormInput
               label="Price ($)"
               type="number"
@@ -128,18 +165,18 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
           </div>
         </div>
 
-        <footer className="p-8 bg-[#2D2D33]/50 border-t border-white/5 flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white transition-all"
-          >
-            Cancel
-          </button>
+        <footer className="p-8 bg-[#2D2D33]/50 border-t border-white/5 flex gap-4">
           <button
             onClick={() => onSave(formData)}
-            className="px-8 py-3 bg-[#FFD700] hover:bg-[#ffeb3b] text-black rounded-xl font-black text-sm shadow-lg transition-all active:scale-95"
+            className="flex-1 py-4 bg-[#FFD700] text-black rounded-2xl font-black text-sm shadow-[0px_4px_0px_#B8860B] hover:translate-y-[1px] hover:shadow-[0px_3px_0px_#B8860B] transition-all active:translate-y-[4px] active:shadow-none"
           >
             Save Changes
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-4 bg-[#2D2D33] text-gray-400 border border-white/10 rounded-2xl font-bold text-sm hover:bg-[#3D3D43] hover:text-white transition-all active:scale-95"
+          >
+            Cancel
           </button>
         </footer>
       </div>

@@ -34,7 +34,7 @@ const MenuCard = ({ item, onAddToCart }) => {
 
           <button
             onClick={() => onAddToCart(item)}
-            className="bg-[#FAF1E4] hover:bg-[#DE6555] text-[#DE6555] hover:text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-colors duration-200 active:scale-95"
+            className="bg-[#DE6555] text-white font-bold py-2.5 px-6 rounded-2xl text-sm shadow-[0px_4px_0px_#A54538] hover:translate-y-[1px] hover:shadow-[0px_3px_0px_#A54538] transition-all active:translate-y-[4px] active:shadow-none"
           >
             + Add to Cart
           </button>

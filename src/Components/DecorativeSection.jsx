@@ -3,12 +3,12 @@ import { DecorativeSplash } from "./icons/Icons";
 
 const DecorativeSection = () => {
   return (
-    <div className="hidden lg:flex relative items-center justify-center w-full h-full pt-10">
+    <div className="flex relative items-center justify-center w-full h-full pt-10 lg:pt-0">
       {/* ADDED 'animate-float' HERE */}
-      <div className="w-[480px] h-[480px] relative group animate-float">
+      <div className="w-[280px] h-[280px] sm:w-[360px] sm:h-[360px] lg:w-[480px] lg:h-[480px] relative group animate-float">
         {/* 1. THE SPLASHES: They will now move with the circle */}
-        <DecorativeSplash className="absolute -top-4 -right-16 w-24 h-24 text-[#DE6555] rotate-45 z-20" />
-        <DecorativeSplash className="absolute -bottom-8 -left-12 w-24 h-24 text-[#DE6555] -rotate-[135deg] z-20" />
+        <DecorativeSplash className="absolute -top-2 sm:-top-4 -right-6 sm:-right-16 w-16 h-16 sm:w-24 sm:h-24 text-[#DE6555] rotate-45 z-20" />
+        <DecorativeSplash className="absolute -bottom-5 sm:-bottom-8 -left-5 sm:-left-12 w-16 h-16 sm:w-24 sm:h-24 text-[#DE6555] -rotate-[135deg] z-20" />
 
         {/* 2. THE IMAGE CONTAINER */}
         <div className="w-full h-full rounded-full border-[6px] border-[#DE6555] overflow-hidden relative z-10 bg-white shadow-2xl">

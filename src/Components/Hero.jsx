@@ -16,7 +16,7 @@ const Hero = () => {
 
       <a
         href="#menu"
-        className="inline-block mt-10 bg-[#DE6555] text-white font-bold text-lg py-4 px-10 rounded-full shadow-[0px_6px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_4px_0px_#A54538] transition-all active:translate-y-[6px] active:shadow-none"
+        className="hidden lg:inline-block mt-10 bg-[#DE6555] text-white font-bold text-lg py-4 px-10 rounded-full shadow-[0px_6px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_4px_0px_#A54538] transition-all active:translate-y-[6px] active:shadow-none"
       >
         Food Menu
       </a>

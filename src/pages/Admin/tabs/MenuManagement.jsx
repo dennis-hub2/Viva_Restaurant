@@ -103,9 +103,9 @@ const MenuManagement = () => {
 
   return (
     <div className="w-full">
-      <header className="flex justify-between items-end mb-10">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-10">
         <div className="text-left">
-          <h2 className="text-4xl font-black text-white tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
             Menu Management
           </h2>
           <p className="text-gray-400 font-medium mt-1">
@@ -115,10 +115,10 @@ const MenuManagement = () => {
         </div>
 
         <button
-          className="bg-[#6539A3] hover:bg-[#7a4bc0] text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all active:scale-95"
+          className="bg-[#6539A3] text-white px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-[0px_4px_0px_#4B1E83] hover:translate-y-[1px] hover:shadow-[0px_3px_0px_#4B1E83] transition-all active:translate-y-[4px] active:shadow-none flex items-center gap-2"
           onClick={() => setIsAddModalOpen(true)}
         >
-          <span className="text-xl leading-none">+</span> Add Item
+          <span className="text-lg sm:text-xl leading-none">+</span> Add New Dish
         </button>
       </header>
 

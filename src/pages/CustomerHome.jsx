@@ -5,9 +5,10 @@ import DecorativeSection from "../Components/DecorativeSection";
 import CategoryTabs from "../Components/CategoryTabs";
 import MenuCard from "../Components/MenuCard";
 import CartDrawer from "../Components/CartDrawer";
+import ContactSection from "../Components/ContactSection";
 
 // 1. NEW: Firebase imports (We deleted the local menuData import!)
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, addDoc } from "firebase/firestore";
 import { db } from "../firebase"; // ⚠️ IMPORTANT: Verify this path points to your firebase config file!
 
 const CustomerHome = () => {
@@ -75,33 +76,38 @@ const CustomerHome = () => {
     );
   };
 
-  const handleCheckout = (tableNumber) => {
-    const existingKdsOrders =
-      JSON.parse(localStorage.getItem("kds_orders")) || [];
+  const handleCheckout = async (tableNumber) => {
+    if (!tableNumber) return;
 
-    const newOrder = {
-      id: Math.floor(1000 + Math.random() * 9000).toString(),
-      table: Number(tableNumber),
-      status: "new",
-      timeElapsed: "0m",
-      items: cart.map((item) => ({
-        qty: item.quantity,
-        name: item.name,
-      })),
-    };
+    try {
+      const ordersCollectionRef = collection(db, "orders");
+      
+      const newOrder = {
+        table: Number(tableNumber),
+        status: "new",
+        createdAt: new Date(),
+        items: cart.map((item) => ({
+          qty: item.quantity,
+          name: item.name,
+          price: item.price,
+          emoji: item.emoji || item.icon || "🍽️"
+        })),
+        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      };
 
-    localStorage.setItem(
-      "kds_orders",
-      JSON.stringify([...existingKdsOrders, newOrder]),
-    );
+      await addDoc(ordersCollectionRef, newOrder);
 
-    setCart([]);
-    setIsCartOpen(false);
+      setCart([]);
+      setIsCartOpen(false);
 
-    setToastMessage(
-      `Order #${newOrder.id} completed for Table ${tableNumber}! 🤖`,
-    );
-    setTimeout(() => setToastMessage(""), 4000);
+      setToastMessage(
+        `Order placed successfully for Table ${tableNumber}! 🤖`
+      );
+      setTimeout(() => setToastMessage(""), 4000);
+    } catch (error) {
+      console.error("Error placing order:", error);
+      setToastMessage("Failed to place order. Please try again.");
+    }
   };
 
   // 3. UPDATED: Filtering logic now points to our live `menuItems` state
@@ -156,6 +162,16 @@ const CustomerHome = () => {
           <div className="flex-1 z-0">
             <DecorativeSection />
           </div>
+
+          {/* NEW: Mobile Food Menu button placed below the animated image on small screens */}
+          <div className="lg:hidden w-full flex justify-center mt-12 pb-10">
+            <a
+              href="#menu"
+              className="inline-block bg-[#DE6555] text-white font-bold text-lg py-4 px-10 rounded-full shadow-[0px_6px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_4px_0px_#A54538] transition-all active:translate-y-[6px] active:shadow-none"
+            >
+              Food Menu
+            </a>
+          </div>
         </main>
 
         <section
@@ -186,6 +202,8 @@ const CustomerHome = () => {
             </div>
           )}
         </section>
+
+        <ContactSection />
       </div>
 
       <CartDrawer

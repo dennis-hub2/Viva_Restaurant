@@ -36,18 +36,18 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName }) => {
           action cannot be undone.
         </p>
 
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 rounded-2xl font-bold text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-          >
-            Cancel
-          </button>
+        <div className="flex gap-4 mt-8">
           <button
             onClick={onConfirm}
-            className="flex-1 py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-black text-sm shadow-lg shadow-red-900/20 transition-all active:scale-95"
+            className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-black text-sm shadow-[0px_4px_0px_#991B1B] hover:translate-y-[1px] hover:shadow-[0px_3px_0px_#991B1B] transition-all active:translate-y-[4px] active:shadow-none"
           >
-            Delete Item
+            Confirm Delete
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-4 bg-[#2D2D33] text-gray-400 border border-white/10 rounded-2xl font-bold text-sm hover:bg-[#3D3D43] hover:text-white transition-all active:scale-95"
+          >
+            Cancel
           </button>
         </div>
       </div>

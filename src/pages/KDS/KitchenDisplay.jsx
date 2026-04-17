@@ -1,66 +1,33 @@
 import React, { useState, useEffect } from "react";
+import { collection, onSnapshot, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { db } from "../../firebase";
 
 // Import your newly extracted components
 import StatCounter from "./components/StatCounter";
 import OrderColumn from "./components/OrderColumn";
 import OrderCard from "./components/OrderCard";
 
-// Mock Data
-const initialOrders = [
-  {
-    id: "4825",
-    table: 3,
-    status: "new",
-    timeElapsed: "2m",
-    items: [
-      { qty: 2, name: "Wagyu Burger", note: "Medium rare" },
-      { qty: 1, name: "Miso Ramen", note: "Extra chashu" },
-    ],
-  },
-  {
-    id: "4824",
-    table: 7,
-    status: "progress",
-    timeElapsed: "8m",
-    items: [
-      { qty: 2, name: "Truffle Pasta" },
-      { qty: 1, name: "Tuna Tartare" },
-    ],
-  },
-  {
-    id: "4823",
-    table: 1,
-    status: "progress",
-    timeElapsed: "12m",
-    items: [
-      { qty: 3, name: "Dragon Roll" },
-      { qty: 2, name: "Lobster Bisque" },
-    ],
-  },
-  {
-    id: "4822",
-    table: 4,
-    status: "ready",
-    timeElapsed: "18m",
-    isLate: true,
-    items: [
-      { qty: 1, name: "Crispy Duck" },
-      { qty: 2, name: "Matcha Lava Cake" },
-    ],
-  },
-];
-
 export default function KitchenDisplay() {
-  const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem("kds_orders");
-    return saved ? JSON.parse(saved) : initialOrders;
-  });
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [time, setTime] = useState("");
 
-  // 1. Sync local state out to localStorage
+  // 1. Live listener for Firestore orders
   useEffect(() => {
-    localStorage.setItem("kds_orders", JSON.stringify(orders));
-  }, [orders]);
+    const ordersRef = collection(db, "orders");
+    const q = query(ordersRef, orderBy("createdAt", "asc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveOrders = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setOrders(liveOrders);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // 2. Live digital clock
   useEffect(() => {
@@ -71,33 +38,12 @@ export default function KitchenDisplay() {
     return () => clearInterval(timer);
   }, []);
 
-  // 3. NEW: Listen for changes coming in from the Customer Page!
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      // Only react if the specific 'kds_orders' key was modified
-      if (e.key === "kds_orders") {
-        if (e.newValue) {
-          setOrders(JSON.parse(e.newValue));
-        } else {
-          setOrders([]); // Clear board if data is deleted
-        }
-      }
-    };
-
-    // Tell the browser window to listen for storage events
-    window.addEventListener("storage", handleStorageChange);
-
-    // Clean up the listener if we leave the KDS page
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  const updateOrderStatus = (orderId, newStatus) => {
-    if (newStatus === "delivered") {
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-    } else {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
-      );
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      await updateDoc(orderRef, { status: newStatus });
+    } catch (error) {
+      console.error("Error updating order status:", error);
     }
   };
 
@@ -148,6 +94,16 @@ export default function KitchenDisplay() {
       nextStatus: "delivered",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-[#0F0F0F] flex items-center justify-center">
+        <div className="text-orange-500 font-bold animate-pulse text-2xl tracking-widest uppercase">
+          Kitchen Syncing...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#0F0F0F] text-white flex flex-col font-sans overflow-hidden">

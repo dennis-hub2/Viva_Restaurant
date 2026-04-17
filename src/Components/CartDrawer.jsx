@@ -59,15 +59,15 @@ const CartDrawer = ({
             {cartItems.length > 0 && (
               <button
                 onClick={() => setShowConfirm(true)}
-                className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors uppercase tracking-wider"
+                className="text-xs font-black text-[#DE6555] hover:text-[#A54538] transition-colors uppercase tracking-widest border-b-2 border-[#DE6555]/30 hover:border-[#DE6555] pb-0.5"
               >
-                Clear All
+                Clear Order
               </button>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 bg-gray-50 rounded-full hover:bg-gray-200 transition-colors active:scale-95"
+            className="p-3 bg-[#FAF1E4] text-[#332A24] rounded-2xl hover:bg-white hover:shadow-md transition-all active:scale-95"
           >
             <CloseIcon />
           </button>

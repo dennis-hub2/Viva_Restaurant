@@ -45,11 +45,29 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-[#333338] text-white font-sans overflow-hidden">
+    <div className="flex flex-col md:flex-row h-screen bg-[#333338] text-white font-sans overflow-hidden">
+      {/* Mobile Header with Tab Selector */}
+      <div className="md:hidden bg-[#2C0E4F] p-4 flex justify-between items-center shadow-lg z-20">
+        <h1 className="text-xl font-bold">Admin</h1>
+        <select 
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value)}
+          className="bg-[#4B1E83] text-white px-3 py-2 rounded-lg text-sm border-none outline-none ring-1 ring-white/20"
+        >
+          <option value="Overview">Overview</option>
+          <option value="Menu Management">Menu Management</option>
+          <option value="Inventory">Inventory</option>
+          <option value="Sales Analysis">Sales Analysis</option>
+          <option value="Staff">Staff</option>
+          <option value="Robots">Robots</option>
+          <option value="Order History">Order History</option>
+        </select>
+      </div>
+
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-10 max-w-7xl mx-auto w-full">{renderContent()}</div>
+        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">{renderContent()}</div>
       </main>
     </div>
   );

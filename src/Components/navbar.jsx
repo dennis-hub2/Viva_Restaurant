@@ -8,40 +8,53 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
   const navLinks = [
     { name: "Home", href: "#" },
     { name: "Menu", href: "#menu" },
-    { name: "Contact", href: "#" },
+    { name: "Contact", href: "#contact" },
   ];
 
   return (
     <nav className="sticky top-0 z-50 bg-[#FAF1E4] flex flex-col sm:flex-row justify-between items-center py-4 md:py-6 px-6 gap-4 shadow-[0_10px_15px_-10px_rgba(0,0,0,0.1)]">
-      {/* Navigation Links - Added 'group' to handle the collective faint effect */}
-      <div className="flex space-x-8 font-bold text-[#3B302B] group">
-        {navLinks.map((link) => {
-          const isActive = activeLink === link.name;
+      {/* Top Row: Links and Cart (on mobile) */}
+      <div className="flex justify-between items-center w-full sm:w-auto gap-8">
+        {/* Navigation Links */}
+        <div className="flex space-x-8 font-bold text-[#3B302B] group">
+          {navLinks.map((link) => {
+            const isActive = activeLink === link.name;
 
-          return (
-            <a
-              key={link.name}
-              href={link.href}
-              onClick={() => setActiveLink(link.name)}
-              className={`relative pb-1 transition-all duration-300 ease-in-out
-                /* 2. Logic: Faint others when the group is hovered, but stay bright if active */
-                group-hover:opacity-40 hover:!opacity-100
-                ${isActive ? "opacity-100 text-[#3B302B]" : "opacity-100 text-gray-500"}
-              `}
-            >
-              {link.name}
+            return (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setActiveLink(link.name)}
+                className={`relative pb-1 transition-all duration-300 ease-in-out
+                  group-hover:opacity-40 hover:!opacity-100
+                  ${isActive ? "opacity-100 text-[#3B302B]" : "opacity-100 text-gray-500"}
+                `}
+              >
+                {link.name}
+                <span
+                  className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
+                  ${isActive ? "w-full" : "w-0"}`}
+                />
+              </a>
+            );
+          })}
+        </div>
 
-              {/* 3. The Animated Underline */}
-              <span
-                className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
-                ${isActive ? "w-full" : "w-0"}`}
-              />
-            </a>
-          );
-        })}
+        {/* Cart Icon (Visible on Mobile inside this flex container) */}
+        <div
+          onClick={onOpenCart}
+          className="sm:hidden relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
+        >
+          <span className="text-lg">🛒</span>
+          {cartItemCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-[#7C903E] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+              {cartItemCount}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Search and Cart Container */}
+      {/* Search and Cart Container (Desktop layout, and Search for mobile) */}
       <div className="flex items-center gap-4 w-full sm:w-auto">
         <div className="relative w-full sm:w-64">
           <input
@@ -65,9 +78,10 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
           </div>
         </div>
 
+        {/* Cart Icon (Visible on Desktop) */}
         <div
           onClick={onOpenCart}
-          className="relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
+          className="hidden sm:flex relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
         >
           <span className="text-lg">🛒</span>
           {cartItemCount > 0 && (
