@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 
 // Importing all your exact tab files!
@@ -11,8 +11,16 @@ import Robots from "./tabs/Robots";
 import OrderHistory from "./tabs/OrderHistory";
 
 export default function AdminDashboard() {
-  // Let's default to Overview
-  const [activeTab, setActiveTab] = useState("Overview");
+  // 1. UPDATED: Lazy initialization checks localStorage first
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem("adminActiveTab");
+    return savedTab ? savedTab : "Overview";
+  });
+
+  // 2. NEW: Save the active tab to localStorage every time it changes
+  useEffect(() => {
+    localStorage.setItem("adminActiveTab", activeTab);
+  }, [activeTab]);
 
   // This maps the Sidebar button clicks to your actual files
   const renderContent = () => {

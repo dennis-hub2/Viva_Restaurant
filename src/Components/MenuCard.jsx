@@ -1,11 +1,15 @@
 import React from "react";
-import { StarIcon, ClockIcon } from "./icons/Icons";
+import { StarIcon } from "./icons/Icons";
 
-// Accept the onAddToCart prop
 const MenuCard = ({ item, onAddToCart }) => {
   return (
     <div className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full border border-gray-50 hover:-translate-y-1 transition-transform duration-200">
-      {/* ... (keep top badges and emoji image exactly the same) ... */}
+      {/* Emoji Section */}
+      <div className="flex-grow flex items-center justify-center mb-8 mt-2">
+        <span className="text-[5rem] drop-shadow-lg filter">
+          {item.icon || item.emoji || " "}
+        </span>
+      </div>
 
       <div className="mt-auto">
         <div className="flex justify-between items-start gap-2 mb-1">
@@ -13,14 +17,7 @@ const MenuCard = ({ item, onAddToCart }) => {
             {item.name}
           </h3>
           <span className="font-bold text-[#DE6555] text-lg shrink-0">
-            ${item.price.toFixed(2)}
-          </span>
-        </div>
-
-        {/* Add this block right below your Top Badges div */}
-        <div className="flex-grow flex items-center justify-center mb-8 mt-2">
-          <span className="text-[5rem] drop-shadow-lg filter">
-            {item.emoji}
+            ${Number(item.price).toFixed(2)}
           </span>
         </div>
 
@@ -30,10 +27,11 @@ const MenuCard = ({ item, onAddToCart }) => {
 
         <div className="flex justify-between items-center pt-4 border-t border-gray-100">
           <div className="flex items-center gap-1 font-bold text-gray-700 text-sm">
-            <StarIcon /> {item.rating}
+            <StarIcon />
+            {/* Logic: Use database rating, otherwise fallback to 5.0 */}
+            {item.rating || "5.0"}
           </div>
 
-          {/* Attach the onClick event here */}
           <button
             onClick={() => onAddToCart(item)}
             className="bg-[#FAF1E4] hover:bg-[#DE6555] text-[#DE6555] hover:text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-colors duration-200 active:scale-95"

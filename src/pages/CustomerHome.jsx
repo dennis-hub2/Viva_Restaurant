@@ -5,7 +5,10 @@ import DecorativeSection from "../Components/DecorativeSection";
 import CategoryTabs from "../Components/CategoryTabs";
 import MenuCard from "../Components/MenuCard";
 import CartDrawer from "../Components/CartDrawer";
-import { menuData } from "../data/menuData";
+
+// 1. NEW: Firebase imports (We deleted the local menuData import!)
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase"; // ⚠️ IMPORTANT: Verify this path points to your firebase config file!
 
 const CustomerHome = () => {
   const [activeTab, setActiveTab] = useState("All");
@@ -13,13 +16,33 @@ const CustomerHome = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  // 1. Lazy Initialize the cart from LocalStorage
+  // 2. NEW: State to hold the live database menu
+  const [menuItems, setMenuItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- The Live Firebase Listener ---
+  useEffect(() => {
+    const menuCollectionRef = collection(db, "menuItems");
+
+    // Listen to the database and update the screen instantly
+    const unsubscribe = onSnapshot(menuCollectionRef, (snapshot) => {
+      const liveData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMenuItems(liveData);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // --- Cart & Checkout Logic (Untouched!) ---
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem("foodie_cart");
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
-  // 2. Sync the cart to LocalStorage EVERY time the cart array changes
   useEffect(() => {
     localStorage.setItem("foodie_cart", JSON.stringify(cart));
   }, [cart]);
@@ -52,15 +75,12 @@ const CustomerHome = () => {
     );
   };
 
-  // --- NEW: Checkout Logic ---
   const handleCheckout = (tableNumber) => {
-    // 1. Fetch existing KDS orders (or start with an empty array)
     const existingKdsOrders =
       JSON.parse(localStorage.getItem("kds_orders")) || [];
 
-    // 2. Format the new order to match your KDS structure
     const newOrder = {
-      id: Math.floor(1000 + Math.random() * 9000).toString(), // Random 4-digit ID
+      id: Math.floor(1000 + Math.random() * 9000).toString(),
       table: Number(tableNumber),
       status: "new",
       timeElapsed: "0m",
@@ -70,30 +90,55 @@ const CustomerHome = () => {
       })),
     };
 
-    // 3. Save the updated orders list back to LocalStorage
     localStorage.setItem(
       "kds_orders",
       JSON.stringify([...existingKdsOrders, newOrder]),
     );
 
-    // 4. Clear the cart and close the drawer
     setCart([]);
     setIsCartOpen(false);
 
-    // 5. Show a success message to the customer
     setToastMessage(
       `Order #${newOrder.id} completed for Table ${tableNumber}! 🤖`,
     );
     setTimeout(() => setToastMessage(""), 4000);
   };
 
-  const filteredMenu = menuData.filter((item) => {
+  // 3. UPDATED: Filtering logic now points to our live `menuItems` state
+  const filteredMenu = menuItems.filter((item) => {
     const matchesCategory = activeTab === "All" || item.category === activeTab;
     const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+      item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.desc?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // --- The Live Firebase Listener with Alphabetical Sorting ---
+  useEffect(() => {
+    const menuCollectionRef = collection(db, "menuItems");
+
+    const unsubscribe = onSnapshot(menuCollectionRef, (snapshot) => {
+      const liveData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // --- Sort A-Z by Name ---
+      const sortedData = liveData.sort((a, b) => {
+        const nameA = a.name?.toLowerCase() || "";
+        const nameB = b.name?.toLowerCase() || "";
+
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      });
+
+      setMenuItems(sortedData);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FAF1E4] px-6 md:px-12 lg:px-20 pb-20 font-sans relative">
@@ -121,15 +166,25 @@ const CustomerHome = () => {
             Our Menu
           </h2>
           <CategoryTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mt-4">
-            {filteredMenu.map((item) => (
-              <MenuCard
-                key={item.id}
-                item={item}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
+
+          {/* 4. NEW: Added a clean loading state so the page doesn't look broken while fetching */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <p className="text-xl font-bold text-[#332A24] animate-pulse">
+                Fetching fresh dishes from the kitchen...
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mt-4">
+              {filteredMenu.map((item) => (
+                <MenuCard
+                  key={item.id}
+                  item={item}
+                  onAddToCart={handleAddToCart}
+                />
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -140,7 +195,7 @@ const CustomerHome = () => {
         onRemoveItem={(id) => handleUpdateQuantity(id, -1)}
         onUpdateQuantity={handleUpdateQuantity}
         onClearCart={() => setCart([])}
-        onCheckout={handleCheckout} // <--- ADDED NEW PROP HERE
+        onCheckout={handleCheckout}
       />
 
       {toastMessage && (
