@@ -8,7 +8,7 @@ import CartDrawer from "../Components/CartDrawer";
 import ContactSection from "../Components/ContactSection";
 
 // 1. NEW: Firebase imports (We deleted the local menuData import!)
-import { collection, onSnapshot, addDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, writeBatch, doc, increment } from "firebase/firestore";
 import { db } from "../firebase"; // ⚠️ IMPORTANT: Verify this path points to your firebase config file!
 
 const CustomerHome = () => {
@@ -80,7 +80,9 @@ const CustomerHome = () => {
     if (!tableNumber) return;
 
     try {
+      const batch = writeBatch(db);
       const ordersCollectionRef = collection(db, "orders");
+      const newOrderRef = doc(ordersCollectionRef); // Create a new doc reference with auto-id
       
       const newOrder = {
         table: Number(tableNumber),
@@ -95,7 +97,19 @@ const CustomerHome = () => {
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
       };
 
-      await addDoc(ordersCollectionRef, newOrder);
+      // 1. Add order to batch
+      batch.set(newOrderRef, newOrder);
+
+      // 2. Add inventory reductions to batch
+      cart.forEach((item) => {
+        const itemRef = doc(db, "menuItems", item.id);
+        batch.update(itemRef, {
+          stock: increment(-item.quantity)
+        });
+      });
+
+      // 3. Commit the batch
+      await batch.commit();
 
       setCart([]);
       setIsCartOpen(false);

@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore"; // For your menu database
 import { getAuth } from "firebase/auth"; // For admin login
-import { getDatabase } from "firebase/database"; // NEW: For live robot telemetry
+import { getDatabase, ref, update } from "firebase/database"; // NEW: For live robot telemetry
 
 // Pulling your keys safely from the .env file
 const firebaseConfig = {
@@ -21,4 +21,5 @@ const app = initializeApp(firebaseConfig);
 // Initialize services and export them so other files can use them
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const rtdb = getDatabase(app); // NEW: Export Realtime Database
+export const rtdb = getDatabase(app); 
+export { ref, update }; // NEW: Export RTDB utilities
