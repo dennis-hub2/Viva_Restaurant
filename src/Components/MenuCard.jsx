@@ -17,7 +17,7 @@ const MenuCard = ({ item, onAddToCart }) => {
             {item.name}
           </h3>
           <span className="font-bold text-[#DE6555] text-lg shrink-0">
-            ${Number(item.price).toFixed(2)}
+            ₵{Number(item.price).toFixed(2)}
           </span>
         </div>
 
@@ -29,7 +29,7 @@ const MenuCard = ({ item, onAddToCart }) => {
           <div className="flex items-center gap-1 font-bold text-gray-700 text-sm">
             <StarIcon />
             {/* Logic: Use database rating, otherwise fallback to 5.0 */}
-            {item.rating || "5.0"}
+            {(item.rating || 5.0).toFixed(1)}
           </div>
 
           <button

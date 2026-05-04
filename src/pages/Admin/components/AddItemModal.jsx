@@ -153,7 +153,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
 
           <div className="grid grid-cols-2 gap-4 text-left">
             <FormInput
-              label="Price"
+              label="Price (₵)"
               type="number"
               placeholder="0.00"
               value={formData.price}

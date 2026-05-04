@@ -66,7 +66,7 @@ const MenuCard = ({ item, onEdit, onDelete }) => {
       {/* Price and Popular Badge */}
       <div className="flex justify-between items-center mt-4">
         <span className="text-[#FFD700] font-black text-xl tracking-tight">
-          ${item.price.toFixed(2)}
+          ₵{item.price.toFixed(2)}
         </span>
         {item.popular && (
           <span className="bg-yellow-500/10 text-yellow-500 text-[9px] font-black px-2 py-0.5 rounded border border-yellow-500/20 uppercase">

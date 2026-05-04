@@ -144,7 +144,7 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
               onChange={(val) => setFormData({ ...formData, category: val })}
             />
             <FormInput
-              label="Price ($)"
+              label="Price (₵)"
               type="number"
               value={formData.price}
               onChange={(val) =>

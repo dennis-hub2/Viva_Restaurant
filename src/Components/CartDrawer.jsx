@@ -97,14 +97,13 @@ const CartDrawer = ({
                   </div>
 
                   <div className="flex-1">
-                    <h4 className="font-bold text-[#332A24] leading-tight">
-                      {item.name}
-                    </h4>
-                    <span className="font-bold text-[#DE6555] text-sm">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </span>
+                  <h4 className="font-bold text-[#332A24] leading-tight">
+                    {item.name}
+                  </h4>
+                  <span className="font-bold text-[#DE6555] text-sm">
+                    ₵{(item.price * item.quantity).toFixed(2)}
+                  </span>
                   </div>
-
                   <div className="flex items-center bg-gray-100 rounded-full px-2 py-1 gap-3">
                     <button
                       onClick={() => onRemoveItem(item.id)}
@@ -137,15 +136,15 @@ const CartDrawer = ({
             <input
               type="number"
               min="1"
-              max="5"
+              max="4"
               value={tableNumber}
               onChange={(e) => {
                 const val = e.target.value;
-                if (val === "" || (Number(val) >= 1 && Number(val) <= 5)) {
+                if (val === "" || (Number(val) >= 1 && Number(val) <= 4)) {
                   setTableNumber(val);
                 }
               }}
-              placeholder="1-5"
+              placeholder="1-4"
               className="w-16 bg-white border-2 border-[#DE6555]/20 rounded-lg py-1 px-2 text-center text-[#DE6555] focus:outline-none focus:border-[#DE6555] focus:ring-2 focus:ring-[#DE6555]/20 transition-all placeholder:text-gray-300 font-black text-lg shadow-sm"
             />
           </div>
@@ -160,7 +159,7 @@ const CartDrawer = ({
             <div className="flex justify-between items-center mb-4 font-bold text-lg">
               <span className="text-gray-600">Subtotal</span>
               <span className="text-[#332A24] text-xl">
-                ${subtotal.toFixed(2)}
+                ₵{subtotal.toFixed(2)}
               </span>
             </div>
             {/* CHECKOUT BUTTON */}

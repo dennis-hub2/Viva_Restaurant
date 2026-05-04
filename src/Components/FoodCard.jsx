@@ -13,7 +13,7 @@ const FoodCard = ({ title, price, rating, imageSrc }) => {
       </div>
 
       <div className="w-full flex justify-between items-center text-[15px] font-bold mt-2 text-[#332A24]">
-        <span>${price.toFixed(2)}</span>
+        <span>₵{price.toFixed(2)}</span>
         <span className="flex items-center">
           <StarIcon /> {rating.toFixed(1)}
         </span>

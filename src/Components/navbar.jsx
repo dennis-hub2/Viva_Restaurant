@@ -12,83 +12,86 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#FAF1E4] flex flex-col sm:flex-row justify-between items-center py-4 md:py-6 px-6 gap-4 shadow-[0_10px_15px_-10px_rgba(0,0,0,0.1)]">
-      {/* Top Row: Links and Cart (on mobile) */}
-      <div className="flex justify-between items-center w-full sm:w-auto gap-8">
-        {/* Navigation Links */}
-        <div className="flex space-x-8 font-bold text-[#3B302B] group">
-          {navLinks.map((link) => {
-            const isActive = activeLink === link.name;
+    <nav className="sticky top-0 z-50 bg-[#FAF1E4] 
+      before:content-[''] before:absolute before:inset-0 before:bg-[#FAF1E4] before:w-screen before:left-1/2 before:-translate-x-1/2 before:-z-10 before:shadow-[0_10px_15px_-10px_rgba(0,0,0,0.1)]">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center py-4 md:py-6 px-6 gap-4">
+        {/* Top Row: Links and Cart (on mobile) */}
+        <div className="flex justify-between items-center w-full sm:w-auto gap-8">
+          {/* Navigation Links */}
+          <div className="flex space-x-8 font-bold text-[#3B302B] group">
+            {navLinks.map((link) => {
+              const isActive = activeLink === link.name;
 
-            return (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={() => setActiveLink(link.name)}
-                className={`relative pb-1 transition-all duration-300 ease-in-out
-                  group-hover:opacity-40 hover:!opacity-100
-                  ${isActive ? "opacity-100 text-[#3B302B]" : "opacity-100 text-gray-500"}
-                `}
-              >
-                {link.name}
-                <span
-                  className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
-                  ${isActive ? "w-full" : "w-0"}`}
-                />
-              </a>
-            );
-          })}
-        </div>
+              return (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setActiveLink(link.name)}
+                  className={`relative pb-1 transition-all duration-300 ease-in-out
+                    group-hover:opacity-40 hover:!opacity-100
+                    ${isActive ? "opacity-100 text-[#3B302B]" : "opacity-100 text-gray-500"}
+                  `}
+                >
+                  {link.name}
+                  <span
+                    className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
+                    ${isActive ? "w-full" : "w-0"}`}
+                  />
+                </a>
+              );
+            })}
+          </div>
 
-        {/* Cart Icon (Visible on Mobile inside this flex container) */}
-        <div
-          onClick={onOpenCart}
-          className="sm:hidden relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
-        >
-          <span className="text-lg">🛒</span>
-          {cartItemCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#7C903E] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
-              {cartItemCount}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Search and Cart Container (Desktop layout, and Search for mobile) */}
-      <div className="flex items-center gap-4 w-full sm:w-auto">
-        <div className="relative w-full sm:w-64">
-          <input
-            type="text"
-            placeholder="Search dishes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                document
-                  .getElementById("menu")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              }
-            }}
-            className="w-full bg-[#DE6555] text-white placeholder-white/80 rounded-full py-2.5 pl-5 pr-12 
-             outline-none text-sm shadow-inner transition-all 
-             focus:ring-2 focus:ring-[#DE6555] focus:brightness-105"
-          />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <SearchIcon />
+          {/* Cart Icon (Visible on Mobile inside this flex container) */}
+          <div
+            onClick={onOpenCart}
+            className="sm:hidden relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
+          >
+            <span className="text-lg">🛒</span>
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#7C903E] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                {cartItemCount}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Cart Icon (Visible on Desktop) */}
-        <div
-          onClick={onOpenCart}
-          className="hidden sm:flex relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
-        >
-          <span className="text-lg">🛒</span>
-          {cartItemCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#7C903E] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
-              {cartItemCount}
-            </span>
-          )}
+        {/* Search and Cart Container (Desktop layout, and Search for mobile) */}
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search dishes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  document
+                    .getElementById("menu")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className="w-full bg-[#DE6555] text-white placeholder-white/80 rounded-full py-2.5 pl-5 pr-12 
+               outline-none text-sm shadow-inner transition-all 
+               focus:ring-2 focus:ring-[#DE6555] focus:brightness-105"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <SearchIcon />
+            </div>
+          </div>
+
+          {/* Cart Icon (Visible on Desktop) */}
+          <div
+            onClick={onOpenCart}
+            className="hidden sm:flex relative bg-white p-2.5 rounded-full shadow-sm cursor-pointer hover:bg-gray-50 transition-colors active:scale-95"
+          >
+            <span className="text-lg">🛒</span>
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#7C903E] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                {cartItemCount}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </nav>

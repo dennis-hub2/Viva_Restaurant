@@ -26,29 +26,27 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    // 1. UPDATED: The gradient colors are now exactly what you requested!
-    <aside className="w-64 flex-shrink-0 bg-gradient-to-b from-[#2C0E4F] to-[#4B1E83] flex flex-col hidden md:flex border-r border-white/5 shadow-2xl z-10 py-6">
-      <div className="px-6 flex items-center gap-3 mb-10">
-        <div className="w-8 h-8 bg-white text-[#2C0E4F] rounded-full flex items-center justify-center font-black text-xl">
-          ≡
-        </div>
-        <h1 className="text-xl font-bold tracking-wide text-white">
-          Admin Page
+    <aside className="w-72 flex-shrink-0 bg-white flex flex-col hidden md:flex border-r-4 border-gray-200 shadow-2xl z-10 py-8">
+      <div className="px-8 flex flex-col gap-1 mb-12">
+        <h1 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
+          VIVA ADMIN
         </h1>
+        <div className="h-1.5 w-12 bg-red-600 rounded-full"></div>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Command Center</p>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2">
+      <nav className="flex-1 px-4 space-y-3">
         {navItems.map((item) => (
           <button
             key={item.name}
             onClick={() => setActiveTab(item.name)}
-            className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+            className={`w-full flex items-center gap-5 px-6 py-5 rounded-2xl text-xs font-black uppercase tracking-[0.15em] transition-all transform active:scale-95 ${
               activeTab === item.name
-                ? "bg-[#5b2f8c] text-white border-l-4 border-white shadow-lg"
-                : "text-gray-300 hover:bg-white/5 hover:text-white border-l-4 border-transparent"
+                ? "bg-gray-900 text-white shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
             }`}
           >
-            <span className="text-lg opacity-80">{item.icon}</span>
+            <span className="text-2xl grayscale-0">{item.icon}</span>
             {item.name}
           </button>
         ))}
@@ -58,10 +56,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       <div className="px-4 mt-auto">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-bold text-red-300 hover:bg-red-500/10 transition-all border border-transparent"
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-red-600 border-4 border-red-50 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm"
         >
-          <span className="text-lg">🚪</span>
-          Logout
+          <span>🚪</span>
+          Sign Out
         </button>
       </div>
     </aside>

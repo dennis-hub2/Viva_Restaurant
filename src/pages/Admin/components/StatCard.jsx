@@ -1,22 +1,21 @@
 import React from "react";
 
 const StatCard = ({ icon, title, value, growth, valueColor }) => (
-  <div className="bg-[#2A2A2D] rounded-2xl p-6 border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex flex-col justify-between h-40 relative overflow-hidden group hover:border-white/10 transition-colors">
+  <div className="bg-white rounded-3xl p-8 border-4 border-gray-200 shadow-xl flex flex-col justify-between h-48 relative overflow-hidden group hover:border-gray-900 transition-all transform active:scale-[0.98]">
     <div className="flex justify-between items-start">
-      <span className="text-2xl bg-[#1A1A1D] p-2 rounded-xl border border-white/5 text-white">
+      <span className="text-3xl bg-gray-100 p-3 rounded-2xl border-2 border-gray-200 text-gray-900 group-hover:bg-gray-900 group-hover:text-white transition-colors">
         {icon}
       </span>
-      <span className="bg-green-500/10 text-green-400 px-2.5 py-1 rounded-full text-xs font-bold border border-green-500/20">
+      <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black border-2 border-emerald-100 uppercase tracking-widest shadow-sm">
         {growth}
       </span>
     </div>
     <div>
-      <h3 className={`text-3xl font-black mt-4 mb-1 ${valueColor}`}>{value}</h3>
-      <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">
+      <h3 className={`text-4xl font-black mt-4 mb-1 tracking-tighter ${valueColor}`}>{value}</h3>
+      <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">
         {title}
       </p>
     </div>
-    <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors"></div>
   </div>
 );
 

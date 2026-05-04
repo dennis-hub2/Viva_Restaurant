@@ -66,7 +66,8 @@ const RobotTracker = () => {
         progress: 0,
         currentPath: returnPath,
         currentTask: "Returning to Kitchen",
-        command: "RETURN_TO_KITCHEN"
+        command: "RETURN_TO_KITCHEN",
+        key: "Swagger" // Security key for RTDB write rules
       });
 
       // 2. Update Order in Firestore (if lastOrderId exists)

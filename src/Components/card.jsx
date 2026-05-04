@@ -25,7 +25,7 @@ const Card = () => {
 
       {/* PRICE + RATING */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xl font-bold">$50.00</span>
+        <span className="text-xl font-bold">₵50.00</span>
         <div className="flex items-center gap-1 text-[#F5A623] font-semibold">
           <Star size={16} fill="#F5A623" />
           5.0

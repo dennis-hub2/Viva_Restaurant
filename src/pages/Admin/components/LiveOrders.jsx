@@ -51,7 +51,8 @@ const LiveOrders = () => {
 
     const unsubscribe = onSnapshot(simpleQ, (snapshot) => {
       const allRecent = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const active = allRecent.filter(o => o.status !== "delivered").slice(0, 5);
+      // Active in KDS means status is new or progress (prepping)
+      const active = allRecent.filter(o => o.status === "new" || o.status === "progress").slice(0, 5);
       setActiveOrders(active);
       setIsLoading(false);
     });
