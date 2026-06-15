@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "orders": {
+      ".read": true,
+      ".write": false
+    },
+    "robots": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
