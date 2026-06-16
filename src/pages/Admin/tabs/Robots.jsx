@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, update } from "firebase/database";
 import { rtdb } from "../../../firebase";
 
 const RobotsTab = () => {
   const [robots, setRobots] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleReset = async (id) => {
+    const confirmReset = window.confirm(`Are you sure you want to reset Robot ${id.toUpperCase()}?`);
+    if (!confirmReset) return;
+
+    try {
+      const robotRef = ref(rtdb, `robots/${id}`);
+      await update(robotRef, {
+        status: "docked",
+        command: "IDLE",
+        currentTask: "Docked / Charging",
+        currentTable: null,
+        destination: null,
+        progress: 0
+      });
+      alert(`Robot ${id.toUpperCase()} has been reset.`);
+    } catch (error) {
+      console.error("Error resetting robot:", error);
+      alert("Failed to reset robot.");
+    }
+  };
 
   useEffect(() => {
     // 1. Point to the 'robots' node in your Realtime Database
@@ -189,15 +210,21 @@ const RobotsTab = () => {
                     </p>
                   </div>
 
-                  <div className="text-left pl-4 border-l border-white/10">
+                  <div className="text-left pl-4 border-l border-white/10 flex flex-col gap-2">
                     <a
                       href={`/robot/${robot.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] font-black text-white bg-[#6539A3] px-3 py-2 rounded-lg hover:bg-[#7a4bc0] transition-all uppercase tracking-widest shadow-lg active:scale-95 flex items-center gap-1"
+                      className="text-[10px] font-black text-white bg-[#6539A3] px-3 py-2 rounded-lg hover:bg-[#7a4bc0] transition-all uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-1"
                     >
                       Track <span>↗</span>
                     </a>
+                    <button
+                      onClick={() => handleReset(robot.id)}
+                      className="text-[10px] font-black text-gray-400 border border-white/10 px-3 py-2 rounded-lg hover:bg-white/5 transition-all uppercase tracking-widest"
+                    >
+                      Reset
+                    </button>
                   </div>
                 </div>
               </div>

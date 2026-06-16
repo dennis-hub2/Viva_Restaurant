@@ -16,10 +16,17 @@ const AdminLogin = () => {
     setError("");
 
     try {
+      if (email !== "Admin1@viva.com") {
+        throw new Error("unauthorized-email");
+      }
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/admin");
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
+      if (err.message === "unauthorized-email") {
+        setError("Access Denied: This email is not authorized for Admin access.");
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -60,7 +67,7 @@ const AdminLogin = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@viva.com"
+              placeholder="Admin1@viva.com"
               className="w-full bg-[#1A1A1D] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:ring-2 focus:ring-[#6539A3] transition-all"
             />
           </div>

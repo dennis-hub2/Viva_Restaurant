@@ -5,29 +5,58 @@ admin.initializeApp();
 
 exports.syncReadyOrders = functions.firestore
   .document("orders/{orderId}")
-  .onWrite((change, context) => {
-    // If the document was deleted, do nothing
-    if (!change.after.exists) {
-      return null;
-    }
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return null;
 
     const orderId = context.params.orderId;
     const orderData = change.after.data();
+    const tableNumber = orderData.tableNumber || orderData.table;
 
-    // Only sync if the status is "ready"
-    if (orderData.status === "ready") {
-      const db = admin.database();
-      const rtdbRef = db.ref(`orders/${orderId}`);
+    // Trigger only when status changes to "ready"
+    if (orderData.status === "ready" && tableNumber) {
+      const rtdb = admin.database();
+      const robotsRef = rtdb.ref("robots");
 
-      // Write the table number and timestamp to RTDB
-      return rtdbRef.set({
-        tableNumber: orderData.tableNumber,
-        timestamp: orderData.timestamp || admin.database.ServerValue.TIMESTAMP
-      }).then(() => {
-        console.log(`Order ${orderId} synced to RTDB. Table: ${orderData.tableNumber}`);
-      }).catch((error) => {
-        console.error(`Error syncing order ${orderId}:`, error);
-      });
+      try {
+        // 1. Find an available robot
+        const snapshot = await robotsRef.once("value");
+        const robots = snapshot.val();
+        let assignedRobotId = null;
+
+        if (robots) {
+          for (const robotId in robots) {
+            if (robots[robotId].status === "docked" || robots[robotId].command === "IDLE") {
+              assignedRobotId = robotId;
+              break;
+            }
+          }
+        }
+
+        if (assignedRobotId) {
+          // 2. Dispatch the robot
+          await robotsRef.child(assignedRobotId).update({
+            command: "GO_TO_TABLE",
+            destination: tableNumber,
+            currentTable: tableNumber,
+            status: "delivering",
+            lastOrderId: orderId,
+            currentTask: `Delivering to Table ${tableNumber}`,
+            progress: 0
+          });
+
+          // 3. Log the assignment in Firestore
+          await change.after.ref.update({
+            assignedRobot: assignedRobotId,
+            dispatchedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+
+          console.log(`Order ${orderId} assigned to Robot ${assignedRobotId}`);
+        } else {
+          console.log(`No robots available for Order ${orderId}`);
+        }
+      } catch (error) {
+        console.error("Error dispatching robot:", error);
+      }
     }
 
     return null;
