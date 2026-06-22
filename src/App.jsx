@@ -8,6 +8,7 @@ import CustomerHome from "./pages/CustomerHome";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import KitchenDisplay from "./pages/KDS/KitchenDisplay";
 import AdminLogin from "./pages/Admin/AdminLogin";
+import RobotAccess from "./pages/Waiter/RobotAccess";
 import RobotTracker from "./pages/Waiter/RobotTracker";
 
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/kds" element={<KitchenDisplay />} />
 
         {/* Robot Tracking for Waiters */}
+        <Route path="/robot" element={<RobotAccess />} />
         <Route path="/robot/:id" element={<RobotTracker />} />
       </Routes>
     </Router>

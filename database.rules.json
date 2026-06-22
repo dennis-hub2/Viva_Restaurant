@@ -6,7 +6,69 @@
     },
     "robots": {
       ".read": true,
-      ".write": true
+      "$robotId": {
+        ".write": true,
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'docked' || newData.val() === 'delivering' || newData.val() === 'arrived' || newData.val() === 'returning' || newData.val() === 'maintenance' || newData.val() === 'offline')"
+        },
+        "battery": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        "health": {
+          ".validate": "newData.isString()"
+        },
+        "currentTask": {
+          ".validate": "newData.isString()"
+        },
+        "currentTable": {
+          ".validate": "newData.isNumber() || newData.val() === null"
+        },
+        "destination": {
+          ".validate": "newData.isNumber() || newData.val() === null"
+        },
+        "progress": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        "command": {
+          ".validate": "newData.isString() && (newData.val() === 'IDLE' || newData.val() === 'GO_TO_TABLE' || newData.val() === 'RETURN_TO_KITCHEN' || newData.val() === 'RESET')"
+        },
+        "commandId": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "commandUpdatedAt": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "connected": {
+          ".validate": "newData.isBoolean()"
+        },
+        "firmwareVersion": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lastSeenAt": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lastOrderId": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lastCompletedCommandId": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lastCompletedAt": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "lastError": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "currentPath": {
+          ".validate": "newData.hasChildren() || newData.val() === null"
+        },
+        "$other": {
+          ".validate": true
+        }
+      }
     }
   }
 }

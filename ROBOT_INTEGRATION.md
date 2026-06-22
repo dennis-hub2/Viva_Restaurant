@@ -1,98 +1,99 @@
-# Viva Restaurant: Robot Hardware Integration Guide
+# Viva Restaurant Robot Integration
 
-This guide provides the JSON schema and protocol for connecting autonomous delivery robots to the Viva Restaurant ecosystem via Firebase Realtime Database (RTDB).
+This project now uses one shared realtime contract between:
 
-## 📡 Firebase RTDB Structure
+- `functions/index.js` for robot dispatch
+- `src/pages/Waiter/RobotTracker.jsx` for live waiter tracking
+- `src/pages/Admin/tabs/Robots.jsx` for fleet monitoring
+- `esp32_robot/esp32_robot.ino` for the ESP32 robot firmware
 
-The robots communicate through the `robots/` node. Each robot is identified by a unique ID (e.g., `robot_01`).
+## Realtime Database Shape
+
+Each robot lives under `robots/{robotId}`.
 
 ```json
 {
   "robots": {
-    "robot_01": {
-      "name": "Alpha-1",
+    "swagbot01": {
+      "name": "SwagBot 01",
       "status": "docked",
       "battery": 85,
       "health": "optimal",
-      "currentTask": "Charging",
-      "currentTable": null,
+      "currentTask": "Docked / Charging",
+      "currentTable": 0,
+      "destination": 0,
       "progress": 0,
       "command": "IDLE",
-      "destination": null,
-      "lastOrderId": "xyz123"
+      "commandId": "",
+      "commandUpdatedAt": "2026-06-22T12:00:00Z",
+      "connected": true,
+      "firmwareVersion": "v2.0.0",
+      "lastSeenAt": "2026-06-22T12:00:00Z",
+      "lastOrderId": "",
+      "lastCompletedCommandId": "",
+      "lastCompletedAt": "",
+      "lastError": "",
+      "currentPath": []
     }
   }
 }
 ```
 
-## 🛠️ Data Fields Reference
+## Command Protocol
 
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `status` | `string` | Current state: `docked`, `delivering`, `arrived`, `returning`, `maintenance` |
-| `battery` | `number` | 0 to 100 percentage. |
-| `health` | `string` | `optimal`, `warning`, `error`. |
-| `currentTask`| `string` | Human-readable task (e.g., "Delivering to Table 5"). |
-| `currentTable`| `number` | The table number the robot is currently at or going to. |
-| `progress` | `number` | 0 to 100 percentage of the current path completion. |
-| `command` | `string` | Instructions from the KDS: `IDLE`, `GO_TO_TABLE`, `RETURN_TO_KITCHEN`. |
-| `destination` | `number` | The target table number for the current command. |
+- `IDLE`: no active mission
+- `GO_TO_TABLE`: move from the dock to the assigned table
+- `RETURN_TO_KITCHEN`: move from the table back to the dock
+- `RESET`: force the robot back to a clean docked state
 
-## 🤖 Robot Logic Flow
+Every mission command must include a fresh `commandId`. The ESP32 only executes commands it has not completed before, which prevents duplicate runs after reconnects or stream hiccups.
 
-### 1. Waiting for Dispatch (KDS)
-The robot should listen for the `command` field to change to `GO_TO_TABLE`.
-- **Trigger**: `command === "GO_TO_TABLE"`
-- **Action**: 
-    1. Read `destination`.
-    2. Set `status` to `delivering`.
-    3. Start movement to the table.
-    4. Update `progress` and `currentTask` in real-time.
+## Status Flow
 
-### 2. Arrival at Table
-Once the robot reaches the coordinates for the `destination`:
-- **Action**:
-    1. Set `status` to `arrived`.
-    2. Set `command` to `IDLE`.
-    3. Update `currentTask` to "Waiting for Waiter".
-    4. Set `progress` to 100.
+1. Kitchen marks an order `ready`.
+2. Cloud Function finds an online docked robot and writes:
+   - `command: GO_TO_TABLE`
+   - `commandId: <unique value>`
+   - `destination/currentTable: <table number>`
+3. ESP32 starts the mission, sends heartbeat updates, and streams progress.
+4. On arrival, ESP32 writes:
+   - `status: arrived`
+   - `command: IDLE`
+   - `lastCompletedCommandId`
+5. Waiter taps `Food Delivered`.
+6. Tracker writes:
+   - `command: RETURN_TO_KITCHEN`
+   - `commandId: <new unique value>`
+7. ESP32 returns to base and finishes in `docked`.
 
-### 3. Returning to Kitchen
-When the waiter presses "Food Delivered" on the tracker:
-- **Trigger**: `status === "returning"` (set by the Web UI).
-- **Action**:
-    1. Start movement to the kitchen coordinates.
-    2. Update `progress` (0 to 100 for the return trip).
-    3. Update `currentTask` to "Returning to Kitchen".
+## ESP32 Setup
 
-### 4. Docking
-Once the robot reaches the kitchen/docking station:
-- **Action**:
-    1. Set `status` to `docked`.
-    2. Set `currentTask` to "Docked / Charging".
-    3. Reset `progress` to 0.
-    4. Reset `currentTable` and `destination` to `null`.
+Update these constants in `esp32_robot/esp32_robot.ino`:
 
-## 💻 Sample Python (Raspberry Pi/ESP32) Snippet
-
-```python
-import firebase_admin
-from firebase_admin import db
-
-# Initialize Firebase
-# ... creds setup ...
-
-def on_command_change(event):
-    cmd = event.data
-    if cmd == "GO_TO_TABLE":
-        dest = db.reference('robots/robot_01/destination').get()
-        start_delivery(dest)
-
-db.reference('robots/robot_01/command').listen(on_command_change)
-
-def update_telemetry(progress, battery):
-    db.reference('robots/robot_01').update({
-        'progress': progress,
-        'battery': battery
-    })
+```cpp
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define FIREBASE_HOST "YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
+#define FIREBASE_AUTH "YOUR_DATABASE_SECRET"
+#define ROBOT_ID "swagbot01"
+#define ROBOT_NAME "SwagBot 01"
 ```
+
+Install the Arduino libraries used by the sketch:
+
+- `Firebase ESP32 Client`
+- `WiFi` (built into ESP32 core)
+
+## Firebase Setup
+
+1. Confirm `.env` contains the web Firebase config, especially `VITE_FIREBASE_DATABASE_URL`.
+2. Deploy database rules from `database.rules.json`.
+3. Deploy the cloud function in `functions/index.js`.
+4. Seed at least one robot node under `robots/swagbot01`.
+
+## Important Behavior
+
+- The web app treats robots as offline if `lastSeenAt` is older than 15 seconds.
+- The Cloud Function only dispatches robots that are both `docked` and recently online.
+- The tracker now marks finished orders as `completed` so the kitchen UI stays consistent.
+- The admin fleet screen shows live online/offline state, last heartbeat time, and reset support.

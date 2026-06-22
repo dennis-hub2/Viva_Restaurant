@@ -1,25 +1,28 @@
-import React, { useState, useEffect } from "react";
-import { ref, onValue, update } from "firebase/database";
+import React, { useEffect, useState } from "react";
+import { onValue, ref, update } from "firebase/database";
 import { rtdb } from "../../../firebase";
+import { buildRobotReset, normalizeRobot } from "../../../data/robotProtocol";
 
-const RobotsTab = () => {
+const statusClasses = (robot) => {
+  if (!robot.isOnline) return "text-red-400 bg-red-400";
+  if (robot.status === "delivering") return "text-blue-400 bg-blue-400";
+  if (robot.status === "docked") return "text-green-400 bg-green-400";
+  return "text-yellow-400 bg-yellow-400";
+};
+
+function RobotsTab() {
   const [robots, setRobots] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleReset = async (id) => {
-    const confirmReset = window.confirm(`Are you sure you want to reset Robot ${id.toUpperCase()}?`);
+    const confirmReset = window.confirm(
+      `Are you sure you want to reset Robot ${id.toUpperCase()}?`,
+    );
     if (!confirmReset) return;
 
     try {
       const robotRef = ref(rtdb, `robots/${id}`);
-      await update(robotRef, {
-        status: "docked",
-        command: "IDLE",
-        currentTask: "Docked / Charging",
-        currentTable: null,
-        destination: null,
-        progress: 0
-      });
+      await update(robotRef, buildRobotReset());
       alert(`Robot ${id.toUpperCase()} has been reset.`);
     } catch (error) {
       console.error("Error resetting robot:", error);
@@ -28,22 +31,19 @@ const RobotsTab = () => {
   };
 
   useEffect(() => {
-    // 1. Point to the 'robots' node in your Realtime Database
     const robotsRef = ref(rtdb, "robots");
-
-    // 2. Listen for changes (onValue is the RTDB equivalent of onSnapshot)
     const unsubscribe = onValue(robotsRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        // RTDB returns an object of objects, so we convert it to an array for our UI
-        const fleetData = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setRobots(fleetData);
-      } else {
+      if (!data) {
         setRobots([]);
+        setIsLoading(false);
+        return;
       }
+
+      const fleetData = Object.keys(data).map((key) =>
+        normalizeRobot(key, data[key]),
+      );
+      setRobots(fleetData);
       setIsLoading(false);
     });
 
@@ -52,15 +52,14 @@ const RobotsTab = () => {
 
   const getStats = () => {
     const total = robots.length;
-    const active = robots.filter((r) => r.status === "delivering").length;
-    const avgBattery =
-      total > 0
-        ? Math.round(
-            robots.reduce((acc, r) => acc + (r.battery || 0), 0) / total,
-          )
-        : 0;
+    const active = robots.filter((robot) => robot.status === "delivering").length;
+    const avgBattery = total
+      ? Math.round(
+          robots.reduce((sum, robot) => sum + (robot.battery || 0), 0) / total,
+        )
+      : 0;
     const issues = robots.filter(
-      (r) => r.health !== "optimal" && r.health !== "Optimal",
+      (robot) => !robot.isOnline || robot.health.toLowerCase() !== "optimal",
     ).length;
 
     return { total, active, avgBattery, issues };
@@ -75,7 +74,7 @@ const RobotsTab = () => {
           Fleet
         </h2>
         <p className="text-gray-500 text-xs font-black uppercase tracking-[0.3em]">
-          Real-time telemetry and task tracking • RTDB
+          Real-time telemetry and task tracking - RTDB
         </p>
       </header>
 
@@ -85,12 +84,10 @@ const RobotsTab = () => {
         </div>
       ) : robots.length === 0 ? (
         <div className="py-20 text-center bg-[#2A2A2D] rounded-[40px] border border-dashed border-white/5">
-          <span className="text-5xl block mb-4">🔌</span>
-          <p className="text-gray-400 font-bold text-lg">
-            No robots connected.
-          </p>
+          <span className="text-5xl block mb-4 text-white font-black">BOT</span>
+          <p className="text-gray-400 font-bold text-lg">No robots connected.</p>
           <p className="text-gray-500 text-sm mt-1">
-            Connect your units to the 'robots' node in your Realtime Database.
+            Connect your units to the `robots` node in Realtime Database.
           </p>
         </div>
       ) : (
@@ -141,12 +138,12 @@ const RobotsTab = () => {
                 className="bg-[#2A2A2D] p-6 rounded-[32px] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl hover:border-white/10 transition-colors"
               >
                 <div className="flex items-center gap-6 flex-1">
-                  <div className="w-16 h-16 bg-[#1A1A1D] rounded-2xl flex items-center justify-center text-3xl shadow-inner">
-                    {robot.status === "maintenance" ? "🛠️" : "🤖"}
+                  <div className="w-16 h-16 bg-[#1A1A1D] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-inner">
+                    {robot.status === "maintenance" ? "FIX" : "BOT"}
                   </div>
                   <div>
                     <h4 className="font-black text-white text-lg leading-tight">
-                      {robot.name || "Unnamed Unit"}
+                      {robot.name}
                     </h4>
                     <p className="text-[#6539A3] text-xs font-black uppercase tracking-widest">
                       ID: {robot.id.toUpperCase()}
@@ -160,24 +157,20 @@ const RobotsTab = () => {
                       Status
                     </p>
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border border-current bg-opacity-10 ${
-                        robot.status === "delivering"
-                          ? "text-blue-400 bg-blue-400"
-                          : robot.status === "docked"
-                            ? "text-green-400 bg-green-400"
-                            : "text-red-400 bg-red-400"
-                      }`}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border border-current bg-opacity-10 ${statusClasses(
+                        robot,
+                      )}`}
                     >
-                      {robot.status || "Offline"}
+                      {robot.isOnline ? robot.status : "offline"}
                     </span>
                   </div>
 
-                  <div className="text-left min-w-[100px]">
+                  <div className="text-left min-w-[140px]">
                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">
                       Current Task
                     </p>
                     <p className="text-sm font-bold text-gray-300">
-                      {robot.currentTask || "Idle"}
+                      {robot.currentTask}
                     </p>
                   </div>
 
@@ -194,7 +187,7 @@ const RobotsTab = () => {
                               ? "bg-yellow-500"
                               : "bg-green-500"
                         }`}
-                        style={{ width: `${robot.battery || 0}%` }}
+                        style={{ width: `${robot.battery}%` }}
                       />
                     </div>
                   </div>
@@ -204,9 +197,28 @@ const RobotsTab = () => {
                       Health
                     </p>
                     <p
-                      className={`text-sm font-black uppercase ${robot.health === "optimal" || robot.health === "Optimal" ? "text-green-400" : "text-red-500"}`}
+                      className={`text-sm font-black uppercase ${
+                        robot.health.toLowerCase() === "optimal"
+                          ? "text-green-400"
+                          : "text-red-500"
+                      }`}
                     >
-                      {robot.health || "Unknown"}
+                      {robot.health}
+                    </p>
+                  </div>
+
+                  <div className="text-left">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">
+                      Last Seen
+                    </p>
+                    <p className="text-xs font-bold text-gray-400">
+                      {robot.lastSeenAt
+                        ? new Date(robot.lastSeenAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })
+                        : "Never"}
                     </p>
                   </div>
 
@@ -217,7 +229,7 @@ const RobotsTab = () => {
                       rel="noopener noreferrer"
                       className="text-[10px] font-black text-white bg-[#6539A3] px-3 py-2 rounded-lg hover:bg-[#7a4bc0] transition-all uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-1"
                     >
-                      Track <span>↗</span>
+                      Track <span>-&gt;</span>
                     </a>
                     <button
                       onClick={() => handleReset(robot.id)}
@@ -234,6 +246,6 @@ const RobotsTab = () => {
       )}
     </div>
   );
-};
+}
 
 export default RobotsTab;

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const navigate = useNavigate();
-  
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -29,10 +29,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     <aside className="w-72 flex-shrink-0 bg-white flex flex-col hidden md:flex border-r-4 border-gray-200 shadow-2xl z-10 py-8">
       <div className="px-8 flex flex-col gap-1 mb-12">
         <h1 className="text-3xl font-black tracking-tighter text-gray-900 leading-none">
-          VIVA ADMIN
+          ADMIN
         </h1>
         <div className="h-1.5 w-12 bg-red-600 rounded-full"></div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Command Center</p>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">
+          Command Center
+        </p>
       </div>
 
       <nav className="flex-1 px-4 space-y-3">
