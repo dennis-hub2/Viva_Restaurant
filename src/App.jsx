@@ -38,7 +38,7 @@ const ProtectedRoute = ({ children }) => {
 
 export default function App() {
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL}>
       <Routes>
         {/* Main Customer Site */}
         <Route path="/" element={<CustomerHome />} />
@@ -59,6 +59,7 @@ export default function App() {
         {/* Robot Tracking for Waiters */}
         <Route path="/robot" element={<RobotAccess />} />
         <Route path="/robot/:id" element={<RobotTracker />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

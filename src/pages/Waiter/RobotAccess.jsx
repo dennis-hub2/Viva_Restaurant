@@ -25,8 +25,7 @@ function RobotAccess() {
             </h1>
             <p className="text-sm text-gray-400 leading-6">
               Use this standalone tracker page to monitor any delivery robot in
-              real time. Enter the robot ID exactly as it exists in Realtime
-              Database.
+              real time. Enter the robot ID.
             </p>
           </div>
 
