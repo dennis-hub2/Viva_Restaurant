@@ -3,94 +3,186 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-const COMMANDS = {
-  GO_TO_TABLE: "GO_TO_TABLE",
-};
+const ROBOT_ID = "swagbot1";
+const TABLES = ["table1", "table2", "table3", "table4"];
 
-const STATUSES = {
-  DOCKED: "docked",
-  MAINTENANCE: "maintenance",
-};
-
-const ONLINE_WINDOW_MS = 15000;
-
-function nowIso() {
-  return new Date().toISOString();
+function tableState() {
+  return {
+    mission: "idle",
+    status: false,
+    arrived: false,
+    confirmed: false,
+  };
 }
 
-function isRobotOnline(robot = {}) {
-  if (!robot.lastSeenAt) return false;
-  const lastSeenMs = Date.parse(robot.lastSeenAt);
-  if (Number.isNaN(lastSeenMs)) return false;
-  return Date.now() - lastSeenMs <= ONLINE_WINDOW_MS;
+function buildIdleRobotState() {
+  return {
+    current_location: "docking",
+    home: false,
+    move: false,
+    route: [],
+    trip_status: "idle",
+    table1: tableState(),
+    table2: tableState(),
+    table3: tableState(),
+    table4: tableState(),
+  };
 }
 
-function isDispatchable(robot = {}) {
-  const idle = robot.command === "IDLE" || !robot.command;
-  return (
-    robot.status === STATUSES.DOCKED &&
-    idle &&
-    robot.status !== STATUSES.MAINTENANCE &&
-    isRobotOnline(robot)
+function getOrderTableName(order = {}) {
+  const rawTable = order.tableName || order.table || order.tableNumber;
+  if (rawTable == null) return null;
+
+  const match = String(rawTable).trim().toLowerCase().match(/(\d+)/);
+  if (!match) return null;
+
+  const tableName = `table${match[1]}`;
+  return TABLES.includes(tableName) ? tableName : null;
+}
+
+function sortRoute(route) {
+  return [...new Set(route)].sort(
+    (left, right) => TABLES.indexOf(left) - TABLES.indexOf(right),
   );
+}
+
+function normalizeRouteValue(route) {
+  const routeValues = Array.isArray(route)
+    ? route
+    : route && typeof route === "object"
+      ? Object.entries(route)
+          .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
+          .map(([, value]) => value)
+      : [];
+
+  return sortRoute(
+    routeValues
+      .map((value) => String(value).trim().toLowerCase())
+      .filter((value) => TABLES.includes(value)),
+  );
+}
+
+function canStartTrip(robot = {}) {
+  const route = normalizeRouteValue(robot.route);
+  return (
+    robot.move !== true &&
+    (robot.trip_status || "idle") === "idle" &&
+    route.length === 0 &&
+    robot.home !== true
+  );
+}
+
+function buildTripState(currentRobot = {}, route = []) {
+  const nextRobot = {
+    ...buildIdleRobotState(),
+    ...currentRobot,
+    move: true,
+    route,
+    trip_status: "en_route",
+  };
+
+  for (const tableName of TABLES) {
+    nextRobot[tableName] = route.includes(tableName)
+      ? {
+          mission: "destination",
+          status: false,
+          arrived: false,
+          confirmed: false,
+        }
+      : tableState();
+  }
+
+  return nextRobot;
+}
+
+async function dispatchReadyOrdersIfPossible() {
+  const firestore = admin.firestore();
+  const robotRef = admin.database().ref(ROBOT_ID);
+
+  try {
+    const [readyOrdersSnapshot, robotSnapshot] = await Promise.all([
+      firestore.collection("orders").where("status", "==", "ready").get(),
+      robotRef.get(),
+    ]);
+
+    const robot = robotSnapshot.val() || buildIdleRobotState();
+    if (!canStartTrip(robot)) {
+      console.log(`Robot ${ROBOT_ID} is busy; ready orders remain queued.`);
+      return null;
+    }
+
+    const dispatchableOrders = readyOrdersSnapshot.docs.filter((doc) => {
+      const data = doc.data();
+      return !data.assignedRobot && getOrderTableName(data);
+    });
+
+    const route = sortRoute(
+      dispatchableOrders
+        .map((doc) => getOrderTableName(doc.data()))
+        .filter(Boolean),
+    );
+
+    if (route.length === 0) {
+      return null;
+    }
+
+    const transaction = await robotRef.transaction((current) => {
+      const currentRobot = current || buildIdleRobotState();
+      if (!canStartTrip(currentRobot)) {
+        return;
+      }
+
+      return buildTripState(currentRobot, route);
+    });
+
+    if (!transaction.committed) {
+      console.log(`Robot ${ROBOT_ID} was claimed by another trip update.`);
+      return null;
+    }
+
+    const batch = firestore.batch();
+    dispatchableOrders.forEach((doc) => {
+      batch.update(doc.ref, {
+        assignedRobot: ROBOT_ID,
+        dispatchedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    await batch.commit();
+
+    console.log(`Started trip for ${ROBOT_ID} with route ${route.join(" -> ")}`);
+  } catch (error) {
+    console.error("Failed to create robot trip:", error);
+  }
+
+  return null;
 }
 
 exports.syncReadyOrders = functions.firestore
   .document("orders/{orderId}")
-  .onWrite(async (change, context) => {
+  .onWrite(async (change) => {
     if (!change.after.exists) return null;
 
     const beforeData = change.before.exists ? change.before.data() : null;
-    const orderData = change.after.data();
-    const orderId = context.params.orderId;
-    const tableNumber = Number(orderData.tableNumber || orderData.table);
+    const afterData = change.after.data();
     const justBecameReady =
-      orderData.status === "ready" && beforeData?.status !== "ready";
+      afterData.status === "ready" && beforeData?.status !== "ready";
 
-    if (!justBecameReady || !tableNumber || orderData.assignedRobot) {
+    if (!justBecameReady || !getOrderTableName(afterData)) {
       return null;
     }
 
-    const rtdb = admin.database();
-    const robotsRef = rtdb.ref("robots");
+    return dispatchReadyOrdersIfPossible();
+  });
 
-    try {
-      const snapshot = await robotsRef.once("value");
-      const robots = snapshot.val() || {};
-      const assignedRobotId = Object.keys(robots).find((robotId) =>
-        isDispatchable(robots[robotId]),
-      );
+exports.dispatchQueuedOrdersWhenRobotIdle = functions.database
+  .ref(`${ROBOT_ID}/trip_status`)
+  .onWrite(async (change) => {
+    const beforeStatus = change.before.val();
+    const afterStatus = change.after.val();
 
-      if (!assignedRobotId) {
-        console.log(`No eligible robot available for order ${orderId}`);
-        return null;
-      }
-
-      const commandId = `${orderId}-${Date.now()}`;
-      await robotsRef.child(assignedRobotId).update({
-        command: COMMANDS.GO_TO_TABLE,
-        commandId,
-        commandUpdatedAt: nowIso(),
-        destination: tableNumber,
-        currentTable: tableNumber,
-        status: "delivering",
-        lastOrderId: orderId,
-        currentTask: `Delivering to Table ${tableNumber}`,
-        progress: 0,
-        currentPath: [],
-        lastError: null,
-      });
-
-      await change.after.ref.update({
-        assignedRobot: assignedRobotId,
-        dispatchedAt: admin.firestore.FieldValue.serverTimestamp(),
-        robotCommandId: commandId,
-      });
-
-      console.log(`Order ${orderId} assigned to robot ${assignedRobotId}`);
-    } catch (error) {
-      console.error("Error dispatching robot:", error);
+    if (afterStatus !== "idle" || beforeStatus === "idle") {
+      return null;
     }
 
-    return null;
+    return dispatchReadyOrdersIfPossible();
   });

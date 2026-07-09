@@ -1,74 +1,92 @@
-const COMMANDS = {
-  IDLE: "IDLE",
-  GO_TO_TABLE: "GO_TO_TABLE",
-  RETURN_TO_KITCHEN: "RETURN_TO_KITCHEN",
-  RESET: "RESET",
-};
+export const ROBOT_ID = "swagbot1";
 
-const STATUSES = {
-  DOCKED: "docked",
-  DELIVERING: "delivering",
-  ARRIVED: "arrived",
+export const TABLES = ["table1", "table2", "table3", "table4"];
+
+export const TRIP_STATUSES = {
+  IDLE: "idle",
+  EN_ROUTE: "en_route",
+  WAITING_CONFIRMATION: "waiting_confirmation",
+  AWAITING_RETURN: "awaiting_return",
   RETURNING: "returning",
-  MAINTENANCE: "maintenance",
-  OFFLINE: "offline",
 };
 
-const DEFAULT_BATTERY = 100;
-const ROBOT_ONLINE_WINDOW_MS = 15000;
-
-const nowIso = () => new Date().toISOString();
-
-export { COMMANDS, STATUSES, DEFAULT_BATTERY, ROBOT_ONLINE_WINDOW_MS };
-
-export function buildRobotCommand(command, overrides = {}) {
+export function buildEmptyTableState() {
   return {
-    command,
-    commandId: overrides.commandId || `${command}-${Date.now()}`,
-    commandUpdatedAt: nowIso(),
+    mission: "idle",
+    status: false,
+    arrived: false,
+    confirmed: false,
+  };
+}
+
+export function buildIdleRobotState(overrides = {}) {
+  return {
+    current_location: "docking",
+    home: false,
+    move: false,
+    route: [],
+    trip_status: TRIP_STATUSES.IDLE,
+    table1: buildEmptyTableState(),
+    table2: buildEmptyTableState(),
+    table3: buildEmptyTableState(),
+    table4: buildEmptyTableState(),
     ...overrides,
   };
 }
 
-export function buildRobotReset() {
-  return buildRobotCommand(COMMANDS.RESET, {
-    status: STATUSES.DOCKED,
-    currentTask: "Docked / Charging",
-    currentTable: null,
-    destination: null,
-    progress: 0,
-    currentPath: [],
-    lastError: null,
-  });
+function getRouteValues(route) {
+  if (Array.isArray(route)) return route;
+  if (!route || typeof route !== "object") return [];
+
+  return Object.entries(route)
+    .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
+    .map(([, value]) => value);
 }
 
-export function normalizeRobot(id, robot = {}) {
-  const lastSeenAt = robot.lastSeenAt || null;
-  const lastSeenMs = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
-  const isOnline =
-    Number.isFinite(lastSeenMs) &&
-    Date.now() - lastSeenMs <= ROBOT_ONLINE_WINDOW_MS;
+export function normalizeRoute(route) {
+  return getRouteValues(route)
+    .map((value) => String(value).trim().toLowerCase())
+    .filter((value, index, array) => TABLES.includes(value) && array.indexOf(value) === index)
+    .sort((left, right) => TABLES.indexOf(left) - TABLES.indexOf(right));
+}
+
+export function normalizeTableState(table = {}) {
+  return {
+    mission: table.mission || "idle",
+    status: table.status === true,
+    arrived: table.arrived === true,
+    confirmed: table.confirmed === true,
+  };
+}
+
+export function normalizeRobot(robot = {}) {
+  const route = normalizeRoute(robot.route);
+  const tables = TABLES.reduce((result, tableName) => {
+    result[tableName] = normalizeTableState(robot[tableName]);
+    return result;
+  }, {});
 
   return {
-    id,
-    name: robot.name || "Unit",
-    status: robot.status || STATUSES.OFFLINE,
-    battery: Number.isFinite(robot.battery) ? robot.battery : DEFAULT_BATTERY,
-    health: robot.health || "unknown",
-    currentTask: robot.currentTask || "Standby Mode",
-    currentTable: robot.currentTable ?? null,
-    destination: robot.destination ?? robot.currentTable ?? null,
-    progress: Number.isFinite(robot.progress) ? robot.progress : 0,
-    command: robot.command || COMMANDS.IDLE,
-    commandId: robot.commandId || null,
-    currentPath: Array.isArray(robot.currentPath) ? robot.currentPath : [],
-    connected: robot.connected ?? isOnline,
-    isOnline,
-    lastSeenAt,
-    lastOrderId: robot.lastOrderId || null,
-    firmwareVersion: robot.firmwareVersion || "unknown",
-    lastCompletedCommandId: robot.lastCompletedCommandId || null,
-    lastCompletedAt: robot.lastCompletedAt || null,
-    lastError: robot.lastError || null,
+    id: ROBOT_ID,
+    currentLocation: robot.current_location || "docking",
+    home: robot.home === true,
+    move: robot.move === true,
+    route,
+    tripStatus: robot.trip_status || TRIP_STATUSES.IDLE,
+    tables,
   };
+}
+
+export function getCurrentTable(robot) {
+  return TABLES.includes(robot.currentLocation) ? robot.currentLocation : null;
+}
+
+export function getTableLabel(tableName) {
+  if (!tableName) return "Docking";
+  if (!TABLES.includes(tableName)) return tableName;
+  return tableName.replace("table", "Table ");
+}
+
+export function isLastRouteStop(robot, tableName) {
+  return robot.route.length > 0 && robot.route[robot.route.length - 1] === tableName;
 }

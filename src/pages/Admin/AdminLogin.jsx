@@ -3,6 +3,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 
+const ADMIN_EMAIL = "admin1@viva.com";
+
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,10 +18,12 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      if (email !== "Admin1@viva.com") {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      if (normalizedEmail !== ADMIN_EMAIL) {
         throw new Error("unauthorized-email");
       }
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
       navigate("/admin");
     } catch (err) {
       if (err.message === "unauthorized-email") {
@@ -67,7 +71,7 @@ const AdminLogin = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Admin1@viva.com"
+              placeholder="admin1@viva.com"
               className="w-full bg-[#1A1A1D] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:ring-2 focus:ring-[#6539A3] transition-all"
             />
           </div>

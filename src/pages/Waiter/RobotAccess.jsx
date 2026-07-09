@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ROBOT_ID } from "../../data/robotProtocol";
 
 function RobotAccess() {
   const navigate = useNavigate();
-  const [robotId, setRobotId] = useState("");
+  const [robotId, setRobotId] = useState(ROBOT_ID);
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const cleanId = robotId.trim().toLowerCase();
-    if (!cleanId) return;
-    navigate(`/robot/${cleanId}`);
+    navigate(`/robot/${robotId.trim().toLowerCase() || ROBOT_ID}`);
   };
 
   return (
@@ -21,11 +20,11 @@ function RobotAccess() {
               Robot Tracking
             </p>
             <h1 className="text-4xl font-black tracking-tight leading-none mb-3">
-              Enter Robot ID
+              Open Waiter Tracker
             </h1>
             <p className="text-sm text-gray-400 leading-6">
-              Use this standalone tracker page to monitor any delivery robot in
-              real time. Enter the robot ID.
+              This waiter screen listens to the single RTDB robot node and exposes
+              the delivery confirmation and send-home actions.
             </p>
           </div>
 
@@ -42,7 +41,7 @@ function RobotAccess() {
                 type="text"
                 value={robotId}
                 onChange={(event) => setRobotId(event.target.value)}
-                placeholder="swagbot01"
+                placeholder={ROBOT_ID}
                 autoComplete="off"
                 className="w-full rounded-[24px] bg-[#101013] border border-white/10 px-5 py-4 text-lg font-bold text-white outline-none focus:border-[#6539A3] focus:ring-2 focus:ring-[#6539A3]/30 transition-all"
               />
@@ -50,8 +49,7 @@ function RobotAccess() {
 
             <button
               type="submit"
-              disabled={!robotId.trim()}
-              className="w-full bg-[#6539A3] disabled:bg-[#6539A3]/40 disabled:cursor-not-allowed text-white font-black text-lg py-4 rounded-[24px] shadow-[0px_8px_0px_#4B1E83] hover:translate-y-[2px] hover:shadow-[0px_6px_0px_#4B1E83] transition-all active:translate-y-[8px] active:shadow-none"
+              className="w-full bg-[#6539A3] text-white font-black text-lg py-4 rounded-[24px] shadow-[0px_8px_0px_#4B1E83] hover:translate-y-[2px] hover:shadow-[0px_6px_0px_#4B1E83] transition-all active:translate-y-[8px] active:shadow-none"
             >
               Open Live Tracker
             </button>

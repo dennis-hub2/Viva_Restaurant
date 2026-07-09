@@ -1,73 +1,57 @@
 {
   "rules": {
-    "orders": {
+    ".read": true,
+    "swagbot1": {
       ".read": true,
-      ".write": false
-    },
-    "robots": {
-      ".read": true,
-      "$robotId": {
-        ".write": true,
-        "name": {
-          ".validate": "newData.isString() && newData.val().length > 0"
-        },
-        "status": {
-          ".validate": "newData.isString() && (newData.val() === 'docked' || newData.val() === 'delivering' || newData.val() === 'arrived' || newData.val() === 'returning' || newData.val() === 'maintenance' || newData.val() === 'offline')"
-        },
-        "battery": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
-        },
-        "health": {
-          ".validate": "newData.isString()"
-        },
-        "currentTask": {
-          ".validate": "newData.isString()"
-        },
-        "currentTable": {
-          ".validate": "newData.isNumber() || newData.val() === null"
-        },
-        "destination": {
-          ".validate": "newData.isNumber() || newData.val() === null"
-        },
-        "progress": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
-        },
-        "command": {
-          ".validate": "newData.isString() && (newData.val() === 'IDLE' || newData.val() === 'GO_TO_TABLE' || newData.val() === 'RETURN_TO_KITCHEN' || newData.val() === 'RESET')"
-        },
-        "commandId": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "commandUpdatedAt": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "connected": {
-          ".validate": "newData.isBoolean()"
-        },
-        "firmwareVersion": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "lastSeenAt": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "lastOrderId": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "lastCompletedCommandId": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "lastCompletedAt": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "lastError": {
-          ".validate": "newData.isString() || newData.val() === null"
-        },
-        "currentPath": {
-          ".validate": "newData.hasChildren() || newData.val() === null"
-        },
-        "$other": {
-          ".validate": true
+      "route": {
+        ".write": "auth.token.role === 'backend'",
+        ".validate": "newData.val() === null || (!newData.isString() && !newData.isNumber() && !newData.isBoolean() && newData.childrenCount <= 4)",
+        "$index": {
+          ".validate": "$index.matches(/^[0-3]$/) && newData.val().matches(/^table[1-4]$/)"
         }
+      },
+      "move": {
+        ".write": "auth.token.role === 'backend'",
+        ".validate": "newData.isBoolean()"
+      },
+      "trip_status": {
+        ".write": "auth.token.role === 'robot' || auth.token.role === 'waiter' || auth.token.role === 'backend'",
+        ".validate": "(auth.token.role === 'backend' && newData.val() === 'en_route') || (auth.token.role === 'robot' && (newData.val() === 'en_route' || newData.val() === 'waiting_confirmation' || newData.val() === 'awaiting_return' || newData.val() === 'idle')) || (auth.token.role === 'waiter' && (newData.val() === 'returning'))"
+      },
+      "current_location": {
+        ".write": "auth.token.role === 'robot'",
+        ".validate": "newData.isString() && (newData.val() === 'docking' || newData.val().matches(/^table[1-4]$/))"
+      },
+      "home": {
+        ".write": "auth.token.role === 'waiter'",
+        ".validate": "newData.isBoolean()"
+      },
+      "table1": {
+        "$field": {
+          ".write": "((auth.token.role === 'backend') && (($field === 'mission') || ($field === 'status'))) || ((auth.token.role === 'robot') && ($field === 'arrived')) || ((auth.token.role === 'waiter') && (($field === 'confirmed') || ($field === 'status')))",
+          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        }
+      },
+      "table2": {
+        "$field": {
+          ".write": "((auth.token.role === 'backend') && (($field === 'mission') || ($field === 'status'))) || ((auth.token.role === 'robot') && ($field === 'arrived')) || ((auth.token.role === 'waiter') && (($field === 'confirmed') || ($field === 'status')))",
+          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        }
+      },
+      "table3": {
+        "$field": {
+          ".write": "((auth.token.role === 'backend') && (($field === 'mission') || ($field === 'status'))) || ((auth.token.role === 'robot') && ($field === 'arrived')) || ((auth.token.role === 'waiter') && (($field === 'confirmed') || ($field === 'status')))",
+          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        }
+      },
+      "table4": {
+        "$field": {
+          ".write": "((auth.token.role === 'backend') && (($field === 'mission') || ($field === 'status'))) || ((auth.token.role === 'robot') && ($field === 'arrived')) || ((auth.token.role === 'waiter') && (($field === 'confirmed') || ($field === 'status')))",
+          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        }
+      },
+      "$other": {
+        ".validate": false
       }
     }
   }

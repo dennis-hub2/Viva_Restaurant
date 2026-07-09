@@ -1,58 +1,54 @@
 #include <WiFi.h>
 #include <FirebaseESP32.h>
-#include <time.h>
 
 // Wi-Fi credentials
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
-// Firebase Realtime Database credentials
-#define FIREBASE_HOST "YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
-#define FIREBASE_AUTH "YOUR_DATABASE_SECRET"
+// Firebase credentials for a dedicated robot account.
+// This account should receive a custom claim such as { role: "robot" }.
+#define FIREBASE_API_KEY "YOUR_FIREBASE_WEB_API_KEY"
+#define FIREBASE_DATABASE_URL "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
+#define FIREBASE_USER_EMAIL "swagbot1.robot@example.com"
+#define FIREBASE_USER_PASSWORD "YOUR_ROBOT_PASSWORD"
 
-// Robot identity
-#define ROBOT_ID "swagbot01"
-#define ROBOT_NAME "SwagBot 01"
-#define FIRMWARE_VERSION "v2.0.0"
-
-// Timing
-const unsigned long HEARTBEAT_INTERVAL_MS = 5000;
-const unsigned long PROGRESS_INTERVAL_MS = 1000;
-const unsigned long DELIVERY_DURATION_MS = 20000;
-const unsigned long RETURN_DURATION_MS = 15000;
+#define ROBOT_PATH "/swagbot1"
 
 FirebaseData streamData;
 FirebaseData requestData;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-struct MissionState {
-  bool active;
-  String command;
-  String commandId;
-  int destination;
-  unsigned long startedAt;
-  unsigned long lastProgressUpdateAt;
-  unsigned long durationMs;
-  int progress;
-};
+const char *TABLES[] = {"table1", "table2", "table3", "table4"};
+const size_t TABLE_COUNT = 4;
 
-MissionState mission = {false, "IDLE", "", 0, 0, 0, 0, 0};
-unsigned long lastHeartbeatAt = 0;
+String routeSequence[TABLE_COUNT];
+bool routeTargets[TABLE_COUNT] = {false, false, false, false};
+size_t routeLength = 0;
 
-String robotPath() {
-  return "/robots/" + String(ROBOT_ID);
+bool homeCommand = false;
+bool moveActive = false;
+bool waitingForConfirmation = false;
+bool awaitingReturn = false;
+bool lineFollowingActive = false;
+String currentLocation = "docking";
+String tripStatus = "idle";
+String waitingTable = "";
+
+void continueFollowingLine() {
+  lineFollowingActive = true;
+  Serial.println("continueFollowingLine() called - add your motor control here.");
 }
 
-String isoTimestamp() {
-  struct tm timeInfo;
-  if (!getLocalTime(&timeInfo, 50)) {
-    return "";
-  }
+void stopRobot() {
+  lineFollowingActive = false;
+  Serial.println("stopRobot() called - add your motor stop logic here.");
+}
 
-  char buffer[25];
-  strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &timeInfo);
-  return String(buffer);
+void beginLineFollowingIfNeeded() {
+  if (!lineFollowingActive) {
+    continueFollowingLine();
+  }
 }
 
 void connectToWifi() {
@@ -68,287 +64,181 @@ void connectToWifi() {
   Serial.println("Wi-Fi connected");
 }
 
-void syncTime() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Syncing clock");
+int tableIndex(const String &tableName) {
+  for (size_t index = 0; index < TABLE_COUNT; index++) {
+    if (tableName == TABLES[index]) {
+      return (int)index;
+    }
+  }
 
-  for (int attempt = 0; attempt < 20; attempt++) {
-    String stamp = isoTimestamp();
-    if (stamp.length() > 0) {
-      Serial.println();
-      Serial.println("Clock synced: " + stamp);
+  return -1;
+}
+
+bool isKnownTable(const String &tableName) {
+  return tableIndex(tableName) >= 0;
+}
+
+bool isTableInRoute(const String &tableName) {
+  int index = tableIndex(tableName);
+  return index >= 0 && routeTargets[index];
+}
+
+bool isLastRouteStop(const String &tableName) {
+  return routeLength > 0 && routeSequence[routeLength - 1] == tableName;
+}
+
+String tablePath(const String &tableName) {
+  return String(ROBOT_PATH) + "/" + tableName;
+}
+
+void clearRoute() {
+  routeLength = 0;
+  for (size_t index = 0; index < TABLE_COUNT; index++) {
+    routeSequence[index] = "";
+    routeTargets[index] = false;
+  }
+}
+
+bool writeTopLevelState(const String &location, const String &nextTripStatus) {
+  FirebaseJson json;
+  json.set("current_location", location);
+  json.set("trip_status", nextTripStatus);
+
+  if (!Firebase.updateNode(requestData, ROBOT_PATH, json)) {
+    Serial.println("Top-level state update failed: " + requestData.errorReason());
+    return false;
+  }
+
+  currentLocation = location;
+  tripStatus = nextTripStatus;
+  return true;
+}
+
+bool writeArrivedState(const String &tableName) {
+  FirebaseJson json;
+  json.set("current_location", tableName);
+  json.set("trip_status", "waiting_confirmation");
+  json.set(tableName + "/arrived", true);
+
+  if (!Firebase.updateNode(requestData, ROBOT_PATH, json)) {
+    Serial.println("Arrival update failed: " + requestData.errorReason());
+    return false;
+  }
+
+  currentLocation = tableName;
+  tripStatus = "waiting_confirmation";
+  return true;
+}
+
+bool isTableConfirmed(const String &tableName) {
+  String path = tablePath(tableName) + "/confirmed";
+  if (!Firebase.getBool(requestData, path)) {
+    Serial.println("Confirm read failed: " + requestData.errorReason());
+    return false;
+  }
+
+  return requestData.boolData();
+}
+
+void syncMotionToTripState() {
+  if (!moveActive) {
+    stopRobot();
+    return;
+  }
+
+  if (tripStatus == "waiting_confirmation" || tripStatus == "awaiting_return") {
+    stopRobot();
+    return;
+  }
+
+  if (tripStatus == "en_route" || tripStatus == "returning") {
+    beginLineFollowingIfNeeded();
+  }
+}
+
+void refreshRouteFromDatabase() {
+  clearRoute();
+
+  if (!Firebase.getArray(requestData, String(ROBOT_PATH) + "/route")) {
+    if (requestData.dataType() == "null") {
       return;
     }
 
-    Serial.print(".");
-    delay(250);
+    Serial.println("Route unavailable or read failed: " + requestData.errorReason());
+    return;
   }
 
-  Serial.println();
-  Serial.println("Clock sync skipped, timestamps may be blank");
-}
+  FirebaseJsonArray &array = requestData.jsonArray();
+  size_t count = array.size();
 
-void beginRobotStream() {
-  if (!Firebase.beginStream(streamData, robotPath())) {
-    Serial.println("Stream start failed: " + streamData.errorReason());
-  } else {
-    Serial.println("Listening on " + robotPath());
+  for (size_t index = 0; index < count && routeLength < TABLE_COUNT; index++) {
+    FirebaseJsonData value;
+    array.get(value, index);
+    String tableName = value.stringValue;
+
+    int tableIdx = tableIndex(tableName);
+    if (tableIdx >= 0 && !routeTargets[tableIdx]) {
+      routeTargets[tableIdx] = true;
+      routeSequence[routeLength++] = tableName;
+    }
   }
 }
 
-bool getStringField(FirebaseJson &json, const char *key, String &output) {
-  FirebaseJsonData data;
-  json.get(data, key);
-  if (!data.success) return false;
-  output = data.stringValue;
-  return true;
-}
+void refreshRobotState() {
+  if (Firebase.getBool(requestData, String(ROBOT_PATH) + "/home")) {
+    homeCommand = requestData.boolData();
+  }
 
-bool getIntField(FirebaseJson &json, const char *key, int &output) {
-  FirebaseJsonData data;
-  json.get(data, key);
-  if (!data.success) return false;
-  output = data.intValue;
-  return true;
-}
+  if (Firebase.getBool(requestData, String(ROBOT_PATH) + "/move")) {
+    moveActive = requestData.boolData();
+  }
 
-void updateRobotState(
-  const String &status,
-  int progress,
-  const String &task,
-  int currentTable,
-  const String &command,
-  const String &commandId,
-  const String &lastCompletedCommandId,
-  const String &lastError
-) {
-  FirebaseJson json;
-  String stamp = isoTimestamp();
+  if (Firebase.getString(requestData, String(ROBOT_PATH) + "/trip_status")) {
+    tripStatus = requestData.stringData();
+  }
 
-  json.set("name", ROBOT_NAME);
-  json.set("status", status);
-  json.set("progress", progress);
-  json.set("currentTask", task);
-  json.set("battery", 85);
-  json.set("health", "optimal");
-  json.set("currentTable", currentTable);
-  json.set("destination", currentTable);
-  json.set("command", command);
-  json.set("commandId", commandId);
-  json.set("connected", true);
-  json.set("firmwareVersion", FIRMWARE_VERSION);
+  if (Firebase.getString(requestData, String(ROBOT_PATH) + "/current_location")) {
+    currentLocation = requestData.stringData();
+  }
 
-  if (stamp.length() > 0) {
-    json.set("lastSeenAt", stamp);
-    json.set("commandUpdatedAt", stamp);
-    if (lastCompletedCommandId.length() > 0) {
-      json.set("lastCompletedAt", stamp);
+  refreshRouteFromDatabase();
+
+  waitingForConfirmation = tripStatus == "waiting_confirmation";
+  awaitingReturn = tripStatus == "awaiting_return";
+  if (waitingForConfirmation && isKnownTable(currentLocation)) {
+    waitingTable = currentLocation;
+  }
+
+  if (waitingForConfirmation && waitingTable.length() > 0 && isTableConfirmed(waitingTable)) {
+    if (isLastRouteStop(waitingTable)) {
+      stopRobot();
+      writeTopLevelState(waitingTable, "awaiting_return");
+      waitingForConfirmation = false;
+      awaitingReturn = true;
+      waitingTable = "";
+    } else {
+      writeTopLevelState(waitingTable, "en_route");
+      waitingForConfirmation = false;
+      awaitingReturn = false;
+      waitingTable = "";
+      beginLineFollowingIfNeeded();
     }
   }
 
-  if (lastCompletedCommandId.length() > 0) {
-    json.set("lastCompletedCommandId", lastCompletedCommandId);
-  }
+  syncMotionToTripState();
+}
 
-  if (lastError.length() > 0) {
-    json.set("lastError", lastError);
+void beginRobotStream() {
+  if (!Firebase.beginStream(streamData, ROBOT_PATH)) {
+    Serial.println("Stream start failed: " + streamData.errorReason());
   } else {
-    json.set("lastError", "");
-  }
-
-  if (!Firebase.updateNode(requestData, robotPath(), json)) {
-    Serial.println("State update failed: " + requestData.errorReason());
+    Serial.println("Listening on " + String(ROBOT_PATH));
   }
 }
 
-void sendHeartbeat() {
-  FirebaseJson json;
-  String stamp = isoTimestamp();
-
-  json.set("name", ROBOT_NAME);
-  json.set("connected", true);
-  json.set("battery", 85);
-  json.set("health", "optimal");
-  json.set("firmwareVersion", FIRMWARE_VERSION);
-
-  if (stamp.length() > 0) {
-    json.set("lastSeenAt", stamp);
-  }
-
-  if (!Firebase.updateNode(requestData, robotPath(), json)) {
-    Serial.println("Heartbeat failed: " + requestData.errorReason());
-  }
-}
-
-void resetMission(bool keepDockedState) {
-  mission.active = false;
-  mission.command = "IDLE";
-  mission.commandId = "";
-  mission.destination = 0;
-  mission.startedAt = 0;
-  mission.lastProgressUpdateAt = 0;
-  mission.durationMs = 0;
-  mission.progress = 0;
-
-  updateRobotState(
-    "docked",
-    0,
-    keepDockedState ? "Docked / Charging" : "Ready for next mission",
-    0,
-    "IDLE",
-    "",
-    "",
-    ""
-  );
-}
-
-void startMission(const String &command, const String &commandId, int destination) {
-  mission.active = true;
-  mission.command = command;
-  mission.commandId = commandId;
-  mission.destination = destination;
-  mission.startedAt = millis();
-  mission.lastProgressUpdateAt = 0;
-  mission.progress = 0;
-  mission.durationMs =
-    command == "GO_TO_TABLE" ? DELIVERY_DURATION_MS : RETURN_DURATION_MS;
-
-  if (command == "GO_TO_TABLE") {
-    Serial.println("Dispatch received for table " + String(destination));
-    updateRobotState(
-      "delivering",
-      0,
-      "Delivering to Table " + String(destination),
-      destination,
-      command,
-      commandId,
-      "",
-      ""
-    );
-  } else if (command == "RETURN_TO_KITCHEN") {
-    Serial.println("Return-to-kitchen command received");
-    updateRobotState(
-      "returning",
-      0,
-      "Returning to Kitchen",
-      destination,
-      command,
-      commandId,
-      "",
-      ""
-    );
-  }
-}
-
-void completeMission() {
-  if (!mission.active) return;
-
-  if (mission.command == "GO_TO_TABLE") {
-    Serial.println("Robot arrived at table");
-    updateRobotState(
-      "arrived",
-      100,
-      "Waiting for Waiter",
-      mission.destination,
-      "IDLE",
-      "",
-      mission.commandId,
-      ""
-    );
-  } else {
-    Serial.println("Robot docked");
-    updateRobotState(
-      "docked",
-      0,
-      "Docked / Charging",
-      0,
-      "IDLE",
-      "",
-      mission.commandId,
-      ""
-    );
-  }
-
-  mission.active = false;
-  mission.command = "IDLE";
-  mission.commandId = "";
-}
-
-void tickMission() {
-  if (!mission.active) return;
-  if (millis() - mission.lastProgressUpdateAt < PROGRESS_INTERVAL_MS) return;
-
-  mission.lastProgressUpdateAt = millis();
-
-  unsigned long elapsed = millis() - mission.startedAt;
-  int nextProgress = (int)((elapsed * 100UL) / mission.durationMs);
-  if (nextProgress > 100) nextProgress = 100;
-  if (nextProgress < mission.progress) nextProgress = mission.progress;
-
-  if (nextProgress == mission.progress && nextProgress < 100) {
-    nextProgress = mission.progress + 5;
-  }
-
-  if (nextProgress > 100) nextProgress = 100;
-  mission.progress = nextProgress;
-
-  String task = mission.command == "GO_TO_TABLE"
-    ? "Delivering to Table " + String(mission.destination)
-    : "Returning to Kitchen";
-
-  updateRobotState(
-    mission.command == "GO_TO_TABLE" ? "delivering" : "returning",
-    mission.progress,
-    task,
-    mission.destination,
-    mission.command,
-    mission.commandId,
-    "",
-    ""
-  );
-
-  if (mission.progress >= 100) {
-    completeMission();
-  }
-}
-
-void processCommandPayload(FirebaseJson &json) {
-  String command = "IDLE";
-  String commandId = "";
-  int destination = 0;
-
-  getStringField(json, "command", command);
-  getStringField(json, "commandId", commandId);
-  getIntField(json, "destination", destination);
-
-  if (command == "IDLE" || commandId.length() == 0) return;
-  if (mission.active && mission.commandId == commandId) return;
-
-  String completedCommandId = "";
-  getStringField(json, "lastCompletedCommandId", completedCommandId);
-  if (completedCommandId == commandId) return;
-
-  if (command == "RESET") {
-    Serial.println("Reset command received");
-    resetMission(true);
-    return;
-  }
-
-  if (command == "GO_TO_TABLE") {
-    startMission(command, commandId, destination);
-    return;
-  }
-
-  if (command == "RETURN_TO_KITCHEN") {
-    startMission(command, commandId, destination);
-    return;
-  }
-}
-
-void listenForCommands() {
+void listenForStateChanges() {
   if (!Firebase.readStream(streamData)) {
     if (streamData.streamTimeout()) {
-      Serial.println("Stream timeout, continuing");
       return;
     }
 
@@ -357,47 +247,89 @@ void listenForCommands() {
     return;
   }
 
-  if (!streamData.streamAvailable()) return;
-
-  String path = streamData.dataPath();
-  if (streamData.dataType() == "json") {
-    FirebaseJson &json = streamData.jsonObject();
-    processCommandPayload(json);
+  if (!streamData.streamAvailable()) {
     return;
   }
 
-  if (path == "/command" || path == "/commandId") {
-    if (Firebase.getJSON(requestData, robotPath())) {
-      FirebaseJson &json = requestData.jsonObject();
-      processCommandPayload(json);
-    } else {
-      Serial.println("Failed to refresh robot node: " + requestData.errorReason());
-    }
+  refreshRobotState();
+}
+
+void onReachTableMarker(const String &tableName) {
+  if (!isKnownTable(tableName)) {
+    Serial.println("Ignoring unknown table marker: " + tableName);
+    return;
   }
+
+  Serial.println("Reached marker for " + tableName);
+
+  if (homeCommand || !isTableInRoute(tableName)) {
+    writeTopLevelState(tableName, tripStatus);
+    beginLineFollowingIfNeeded();
+    return;
+  }
+
+  stopRobot();
+  waitingTable = tableName;
+  waitingForConfirmation = true;
+  awaitingReturn = false;
+  writeArrivedState(tableName);
+}
+
+void resetVisitedRouteState() {
+  FirebaseJson json;
+
+  for (size_t index = 0; index < routeLength; index++) {
+    String tableName = routeSequence[index];
+    json.set(tableName + "/mission", "idle");
+    json.set(tableName + "/status", false);
+    json.set(tableName + "/arrived", false);
+    json.set(tableName + "/confirmed", false);
+  }
+
+  json.set("trip_status", "idle");
+  json.set("move", false);
+  json.set("home", false);
+  json.set("current_location", "docking");
+
+  if (!Firebase.updateNode(requestData, ROBOT_PATH, json)) {
+    Serial.println("Dock reset failed: " + requestData.errorReason());
+    return;
+  }
+
+  if (!Firebase.deleteNode(requestData, String(ROBOT_PATH) + "/route")) {
+    Serial.println("Route clear failed: " + requestData.errorReason());
+  }
+
+  clearRoute();
+  homeCommand = false;
+  moveActive = false;
+  waitingForConfirmation = false;
+  awaitingReturn = false;
+  waitingTable = "";
+  currentLocation = "docking";
+  tripStatus = "idle";
+}
+
+void onReachDocking() {
+  Serial.println("Reached docking marker");
+  stopRobot();
+  resetVisitedRouteState();
 }
 
 void setup() {
   Serial.begin(115200);
   connectToWifi();
-  syncTime();
 
-  config.host = FIREBASE_HOST;
-  config.signer.tokens.legacy_token = FIREBASE_AUTH;
+  config.api_key = FIREBASE_API_KEY;
+  config.database_url = FIREBASE_DATABASE_URL;
+  auth.user.email = FIREBASE_USER_EMAIL;
+  auth.user.password = FIREBASE_USER_PASSWORD;
 
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
-  beginRobotStream();
 
-  updateRobotState(
-    "docked",
-    0,
-    "Docked / Charging",
-    0,
-    "IDLE",
-    "",
-    "",
-    ""
-  );
+  beginRobotStream();
+  refreshRobotState();
 }
 
 void loop() {
@@ -406,11 +338,8 @@ void loop() {
     beginRobotStream();
   }
 
-  listenForCommands();
-  tickMission();
+  listenForStateChanges();
 
-  if (millis() - lastHeartbeatAt >= HEARTBEAT_INTERVAL_MS) {
-    lastHeartbeatAt = millis();
-    sendHeartbeat();
-  }
+  // Call onReachTableMarker("table1"), ..., or onReachDocking() from your
+  // line-sensor / marker-detection code when the robot physically hits a marker.
 }
