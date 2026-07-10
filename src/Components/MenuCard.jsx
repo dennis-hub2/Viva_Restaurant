@@ -4,11 +4,15 @@ import { StarIcon } from "./icons/Icons";
 const MenuCard = ({ item, onAddToCart }) => {
   return (
     <div className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col h-full border border-gray-50 hover:-translate-y-1 transition-transform duration-200">
-      {/* Emoji Section */}
+      {/* Image Section */}
       <div className="flex-grow flex items-center justify-center mb-8 mt-2">
-        <span className="text-[5rem] drop-shadow-lg filter">
-          {item.icon || item.emoji || " "}
-        </span>
+        <div className="w-32 h-32 rounded-3xl overflow-hidden border border-gray-100 bg-[#FAF1E4] shadow-inner">
+          <img
+            src={item.image || item.icon || item.emoji || "/food-placeholder.svg"}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
 
       <div className="mt-auto">

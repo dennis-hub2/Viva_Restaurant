@@ -66,6 +66,7 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
   const [formData, setFormData] = useState({
     ...item,
     desc: item?.desc || "",
+    image: item?.image || item?.icon || "/food-placeholder.svg",
   });
 
   
@@ -112,19 +113,18 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
         </header>
 
         <div className="p-8 space-y-6">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-start">
             <div className="flex flex-col gap-2 w-24">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Emoji
+                Image
               </label>
-              <input
-                type="text"
-                value={formData.icon || "🍽️"}
-                onChange={(e) =>
-                  setFormData({ ...formData, icon: e.target.value })
-                }
-                className="h-[46px] w-full bg-[#2D2D33] border border-white/5 rounded-xl text-center text-2xl text-white focus:outline-none focus:ring-2 focus:ring-[#FFD700]/20 focus:border-[#FFD700]/50 transition-all shadow-inner"
-              />
+              <div className="h-[46px] w-full overflow-hidden rounded-xl border border-white/5 bg-[#2D2D33] shadow-inner">
+                <img
+                  src={formData.image || "/food-placeholder.svg"}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
 
             <div className="flex-1 text-left">
@@ -134,6 +134,21 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
                 onChange={(val) => setFormData({ ...formData, name: val })}
               />
             </div>
+          </div>
+
+          <div className="text-left">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              Image URL
+            </label>
+            <input
+              type="text"
+              value={formData.image || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, image: e.target.value })
+              }
+              placeholder="https://... or /image.png"
+              className="mt-2 w-full bg-[#2D2D33] border border-white/5 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFD700]/20 focus:border-[#FFD700]/50 transition-all shadow-inner text-sm"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-left">

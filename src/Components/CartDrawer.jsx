@@ -92,8 +92,12 @@ const CartDrawer = ({
                   key={item.id}
                   className="flex items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-50"
                 >
-                  <div className="relative text-4xl bg-[#FAF1E4] p-2 rounded-xl h-16 w-16 flex items-center justify-center filter drop-shadow-sm">
-                    {item.emoji}
+                  <div className="relative bg-[#FAF1E4] p-1 rounded-xl h-16 w-16 overflow-hidden flex items-center justify-center filter drop-shadow-sm">
+                    <img
+                      src={item.image || item.icon || item.emoji || "/food-placeholder.svg"}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
                   <div className="flex-1">

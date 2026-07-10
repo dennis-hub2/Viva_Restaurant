@@ -50,9 +50,13 @@ const MenuCard = ({ item, onEdit, onDelete }) => {
         </button>
       </div>
 
-      {/* Icon Placeholder */}
-      <div className="w-14 h-14 bg-[#333338] rounded-2xl flex items-center justify-center text-3xl shadow-inner mb-4 border border-white/5">
-        {item.icon}
+      {/* Image Placeholder */}
+      <div className="w-14 h-14 bg-[#333338] rounded-2xl overflow-hidden shadow-inner mb-4 border border-white/5">
+        <img
+          src={item.image || item.icon || item.emoji || "/food-placeholder.svg"}
+          alt={item.name}
+          className="w-full h-full object-cover"
+        />
       </div>
 
       {/* Category & Name */}

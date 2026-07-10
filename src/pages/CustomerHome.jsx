@@ -92,7 +92,7 @@ const CustomerHome = () => {
           qty: item.quantity,
           name: item.name,
           price: item.price,
-          emoji: item.emoji || item.icon || "🍽️"
+          image: item.image || item.icon || item.emoji || "/food-placeholder.svg"
         })),
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
       };

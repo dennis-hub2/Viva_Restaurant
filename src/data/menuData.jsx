@@ -19,7 +19,7 @@ export const menuData = [
     rating: 4.9,
     time: "12 min",
     popular: true,
-    emoji: "🍔",
+    image: "/food-placeholder.svg",
     category: "Burgers",
   },
   {
@@ -30,7 +30,7 @@ export const menuData = [
     rating: 4.8,
     time: "18 min",
     popular: true,
-    emoji: "🍝",
+    image: "/food-placeholder.svg",
     category: "Pasta",
   },
   {
@@ -41,7 +41,7 @@ export const menuData = [
     rating: 4.7,
     time: "10 min",
     popular: false,
-    emoji: "🍣",
+    image: "/food-placeholder.svg",
     category: "Sushi",
   },
   {
@@ -52,7 +52,7 @@ export const menuData = [
     rating: 4.9,
     time: "15 min",
     popular: false,
-    emoji: "🍜",
+    image: "/food-placeholder.svg",
     category: "Ramen",
   },
   {
@@ -63,7 +63,7 @@ export const menuData = [
     rating: 4.6,
     time: "8 min",
     popular: false,
-    emoji: "🦞",
+    image: "/food-placeholder.svg",
     category: "Soups",
   },
   {
@@ -74,7 +74,7 @@ export const menuData = [
     rating: 4.8,
     time: "20 min",
     popular: true,
-    emoji: "🍗",
+    image: "/food-placeholder.svg",
     category: "Mains",
   },
   {
@@ -85,7 +85,7 @@ export const menuData = [
     rating: 4.7,
     time: "8 min",
     popular: false,
-    emoji: "🐟",
+    image: "/food-placeholder.svg",
     category: "Starters",
   },
   {
@@ -96,7 +96,7 @@ export const menuData = [
     rating: 4.9,
     time: "12 min",
     popular: true,
-    emoji: "🍵",
+    image: "/food-placeholder.svg",
     category: "Desserts",
   },
 ];
