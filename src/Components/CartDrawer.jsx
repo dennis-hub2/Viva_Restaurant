@@ -94,19 +94,24 @@ const CartDrawer = ({
                 >
                   <div className="relative bg-[#FAF1E4] p-1 rounded-xl h-16 w-16 overflow-hidden flex items-center justify-center filter drop-shadow-sm">
                     <img
-                      src={item.image || item.icon || item.emoji || "/food-placeholder.svg"}
+                      src={
+                        item.image ||
+                        item.icon ||
+                        item.emoji ||
+                        "/food-placeholder.svg"
+                      }
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
 
                   <div className="flex-1">
-                  <h4 className="font-bold text-[#332A24] leading-tight">
-                    {item.name}
-                  </h4>
-                  <span className="font-bold text-[#DE6555] text-sm">
-                    ₵{(item.price * item.quantity).toFixed(2)}
-                  </span>
+                    <h4 className="font-bold text-[#332A24] leading-tight">
+                      {item.name}
+                    </h4>
+                    <span className="font-bold text-[#DE6555] text-sm">
+                      ₵{(item.price * item.quantity).toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex items-center bg-gray-100 rounded-full px-2 py-1 gap-3">
                     <button

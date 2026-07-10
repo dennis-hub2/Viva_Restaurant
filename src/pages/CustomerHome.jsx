@@ -8,7 +8,14 @@ import CartDrawer from "../Components/CartDrawer";
 import ContactSection from "../Components/ContactSection";
 
 // 1. NEW: Firebase imports (We deleted the local menuData import!)
-import { collection, onSnapshot, addDoc, writeBatch, doc, increment } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  writeBatch,
+  doc,
+  increment,
+} from "firebase/firestore";
 import { db } from "../firebase"; // ⚠️ IMPORTANT: Verify this path points to your firebase config file!
 
 const CustomerHome = () => {
@@ -83,7 +90,7 @@ const CustomerHome = () => {
       const batch = writeBatch(db);
       const ordersCollectionRef = collection(db, "orders");
       const newOrderRef = doc(ordersCollectionRef); // Create a new doc reference with auto-id
-      
+
       const newOrder = {
         table: Number(tableNumber),
         status: "new",
@@ -92,9 +99,10 @@ const CustomerHome = () => {
           qty: item.quantity,
           name: item.name,
           price: item.price,
-          image: item.image || item.icon || item.emoji || "/food-placeholder.svg"
+          image:
+            item.image || item.icon || item.emoji || "/food-placeholder.svg",
         })),
-        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
       };
 
       // 1. Add order to batch
@@ -104,7 +112,7 @@ const CustomerHome = () => {
       cart.forEach((item) => {
         const itemRef = doc(db, "menuItems", item.id);
         batch.update(itemRef, {
-          stock: increment(-item.quantity)
+          stock: increment(-item.quantity),
         });
       });
 
@@ -114,9 +122,7 @@ const CustomerHome = () => {
       setCart([]);
       setIsCartOpen(false);
 
-      setToastMessage(
-        `Order placed successfully for Table ${tableNumber}! 🤖`
-      );
+      setToastMessage(`Order placed successfully for Table ${tableNumber}! 🤖`);
       setTimeout(() => setToastMessage(""), 4000);
     } catch (error) {
       console.error("Error placing order:", error);

@@ -8,7 +8,9 @@ const MenuCard = ({ item, onAddToCart }) => {
       <div className="flex-grow flex items-center justify-center mb-8 mt-2">
         <div className="w-32 h-32 rounded-3xl overflow-hidden border border-gray-100 bg-[#FAF1E4] shadow-inner">
           <img
-            src={item.image || item.icon || item.emoji || "/food-placeholder.svg"}
+            src={
+              item.image || item.icon || item.emoji || "/food-placeholder.svg"
+            }
             alt={item.name}
             className="w-full h-full object-cover"
           />

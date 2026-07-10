@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-
 const FormInput = ({ label, value, onChange, type = "text" }) => (
   <div className="flex flex-col gap-2">
     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -62,14 +61,13 @@ const EditItemModal = ({ isOpen, onClose, item, onSave }) => {
     "Starters",
     "Desserts",
   ];
-  
+
   const [formData, setFormData] = useState({
     ...item,
     desc: item?.desc || "",
     image: item?.image || item?.icon || "/food-placeholder.svg",
   });
 
-  
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") onClose();
