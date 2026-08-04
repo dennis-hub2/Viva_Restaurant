@@ -344,9 +344,27 @@ export default function KitchenDisplay() {
       if (newStatus === "ready") updateData.readyAt = Timestamp.now();
       if (newStatus === "completed") updateData.completedAt = Timestamp.now();
       await updateDoc(orderRef, updateData);
+
+      if (newStatus === "ready") {
+        const updatedOrder = {
+          ...(selectedOrder || {}),
+          id,
+          status: "ready",
+          assignedRobot: selectedOrder?.assignedRobot,
+          table: selectedOrder?.table,
+          tableNumber: selectedOrder?.tableNumber,
+        };
+        await assignRobotForOrder(updatedOrder);
+        setDispatchStatus(getDispatchStatus());
+        setToastMessage("Robot assigned automatically.");
+        setTimeout(() => setToastMessage(""), 3000);
+      }
+
       setSelectedOrder(null);
     } catch (error) {
       console.error("Error updating order:", error);
+      setToastMessage("Order update failed.");
+      setTimeout(() => setToastMessage(""), 3000);
     }
   };
 
