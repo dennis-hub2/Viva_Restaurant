@@ -892,6 +892,32 @@ export default function KitchenDisplay() {
                     Confirm Delivery <Check size={24} strokeWidth={4} />
                   </button>
                 </div>
+              ) : selectedOrder.status === "completed" &&
+                !selectedOrder.assignedRobot ? (
+                <div className="flex flex-col gap-8">
+                  <div className="bg-amber-50 border-2 border-amber-100 p-8 rounded-[40px] text-center shadow-inner">
+                    <p className="text-[11px] font-black text-amber-600 uppercase tracking-[0.5em] mb-3">
+                      Dispatch Missing
+                    </p>
+                    <p className="text-gray-900 font-black text-2xl tracking-tighter italic">
+                      This order was completed before robot assignment.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleAssignRobotNow}
+                    className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-7 rounded-[32px] text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                  >
+                    Assign Bot Now
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleUpdateStatus(selectedOrder.id, "completed")
+                    }
+                    className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-7 rounded-[32px] text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                  >
+                    Confirm Delivery <Check size={24} strokeWidth={4} />
+                  </button>
+                </div>
               ) : null}
             </div>
           </div>
