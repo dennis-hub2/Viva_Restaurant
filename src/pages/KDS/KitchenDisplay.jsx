@@ -8,6 +8,14 @@ import {
   where,
   Timestamp,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../firebase";
+import {
+  initDispatchListeners,
+  getDispatchStatus,
+  runManualDispatch,
+  assignRobotForOrder,
+} from "../../robotDispatch";
 import { db } from "../../firebase";
 import {
   LayoutDashboard,
@@ -172,11 +180,104 @@ export default function KitchenDisplay() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [dispatchEnabled, setDispatchEnabled] = useState(false);
+  const [dispatchStatus, setDispatchStatus] = useState(getDispatchStatus());
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDispatchStatus(getDispatchStatus());
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let stopDispatch = null;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setDispatchEnabled(false);
+        if (stopDispatch) {
+          stopDispatch();
+          stopDispatch = null;
+        }
+        return;
+      }
+
+      try {
+        const tokenResult = await user.getIdTokenResult();
+        const isBackend = tokenResult.claims?.role === "backend";
+
+        setDispatchEnabled(isBackend);
+
+        if (isBackend && !stopDispatch) {
+          stopDispatch = initDispatchListeners();
+        }
+
+        if (!isBackend && stopDispatch) {
+          stopDispatch();
+          stopDispatch = null;
+        }
+      } catch (error) {
+        console.error("Failed to read backend claim:", error);
+        setDispatchEnabled(false);
+        if (stopDispatch) {
+          stopDispatch();
+          stopDispatch = null;
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (stopDispatch) {
+        stopDispatch();
+      }
+    };
+  }, []);
+
+  const handleManualDispatch = async () => {
+    try {
+      await runManualDispatch();
+      setDispatchStatus(getDispatchStatus());
+      setToastMessage("Dispatch checked successfully.");
+      setTimeout(() => setToastMessage(""), 3000);
+    } catch (error) {
+      console.error("Manual dispatch failed:", error);
+      setToastMessage("Dispatch check failed.");
+      setTimeout(() => setToastMessage(""), 3000);
+    }
+  };
+
+  const handleAssignRobotNow = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      await assignRobotForOrder(selectedOrder);
+      setDispatchStatus(getDispatchStatus());
+      setSelectedOrder((current) =>
+        current
+          ? {
+              ...current,
+              assignedRobot: "swagbot1",
+              status: "ready",
+            }
+          : current,
+      );
+      setToastMessage("Robot assigned successfully.");
+      setTimeout(() => setToastMessage(""), 3000);
+    } catch (error) {
+      console.error("Manual bot assignment failed:", error);
+      setToastMessage("Robot assignment failed.");
+      setTimeout(() => setToastMessage(""), 3000);
+    }
+  };
 
   useEffect(() => {
     const ordersRef = collection(db, "orders");
@@ -392,6 +493,20 @@ export default function KitchenDisplay() {
           })}
         </div>
         <div className="flex items-center gap-6">
+          <div
+            className={`text-[10px] font-black px-5 py-2.5 rounded-2xl border-2 uppercase tracking-widest shadow-sm ${
+              dispatchEnabled
+                ? "bg-blue-50 border-blue-100 text-blue-600"
+                : "bg-amber-50 border-amber-100 text-amber-600"
+            }`}
+          >
+            {dispatchEnabled ? "Backend Dispatch Live" : "Backend Dispatch Off"}
+          </div>
+          <div className="text-[10px] font-black px-5 py-2.5 rounded-2xl border-2 uppercase tracking-widest shadow-sm bg-gray-50 border-gray-200 text-gray-600">
+            {dispatchStatus.listenersActive
+              ? "Listener Healthy"
+              : "Listener Offline"}
+          </div>
           <div className="bg-emerald-50 border-2 border-emerald-100 text-emerald-600 text-[10px] font-black px-5 py-2.5 rounded-2xl flex items-center gap-3 shadow-sm">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.4)]"></div>
             SYSTEM ONLINE
@@ -733,9 +848,23 @@ export default function KitchenDisplay() {
                     <p className="text-gray-900 font-black text-2xl tracking-tighter italic">
                       {selectedOrder.assignedRobot
                         ? `Robot ${selectedOrder.assignedRobot.toUpperCase()} is En Route`
-                        : "Waiting for Available Unit..."}
+                      : "Waiting for Available Unit..."}
                     </p>
                   </div>
+                  {!dispatchEnabled && (
+                    <button
+                      onClick={handleManualDispatch}
+                      className="w-full bg-blue-600 hover:bg-gray-900 text-white font-black py-7 rounded-[32px] text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                    >
+                      Manual Dispatch Fallback
+                    </button>
+                  )}
+                  <button
+                    onClick={handleAssignRobotNow}
+                    className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-7 rounded-[32px] text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                  >
+                    Assign Bot Now
+                  </button>
                   <button
                     onClick={() =>
                       handleUpdateStatus(selectedOrder.id, "completed")
@@ -748,6 +877,12 @@ export default function KitchenDisplay() {
               ) : null}
             </div>
           </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-10 right-6 bg-[#332A24] text-white px-6 py-4 rounded-2xl shadow-2xl z-[100] animate-bounce">
+          {toastMessage}
         </div>
       )}
     </div>
