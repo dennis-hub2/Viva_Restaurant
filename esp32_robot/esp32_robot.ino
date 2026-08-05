@@ -203,6 +203,17 @@ void refreshRobotState() {
 
   refreshRouteFromDatabase();
 
+  Serial.print("[Sync] State: Location=");
+  Serial.print(currentLocation);
+  Serial.print(" | Status=");
+  Serial.print(tripStatus);
+  Serial.print(" | Move=");
+  Serial.print(moveActive ? "YES" : "NO");
+  Serial.print(" | Home=");
+  Serial.print(homeCommand ? "YES" : "NO");
+  Serial.print(" | Route Stops=");
+  Serial.println(routeLength);
+
   waitingForConfirmation = tripStatus == "waiting_confirmation";
   awaitingReturn = tripStatus == "awaiting_return";
   if (waitingForConfirmation && isKnownTable(currentLocation)) {
@@ -211,11 +222,21 @@ void refreshRobotState() {
 
   if (waitingForConfirmation && waitingTable.length() > 0 && isTableConfirmed(waitingTable)) {
     if (isLastRouteStop(waitingTable)) {
-      stopRobot();
-      writeTopLevelState(waitingTable, "awaiting_return");
+      // Automatically return home when the last stop is confirmed
+      FirebaseJson json;
+      json.set("current_location", waitingTable);
+      json.set("trip_status", "returning");
+      json.set("home", true);
+      if (!Firebase.updateNode(requestData, ROBOT_PATH, json)) {
+        Serial.println("Auto-return update failed: " + requestData.errorReason());
+      }
+      currentLocation = waitingTable;
+      tripStatus = "returning";
+      homeCommand = true;
       waitingForConfirmation = false;
-      awaitingReturn = true;
+      awaitingReturn = false;
       waitingTable = "";
+      beginLineFollowingIfNeeded();
     } else {
       writeTopLevelState(waitingTable, "en_route");
       waitingForConfirmation = false;

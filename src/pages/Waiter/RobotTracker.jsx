@@ -9,6 +9,7 @@ import {
   ROBOT_ID,
   TABLES,
   TRIP_STATUSES,
+  isLastRouteStop,
 } from "../../data/robotProtocol";
 
 const tripStatusMeta = {
@@ -112,7 +113,7 @@ function RobotTracker() {
     });
 
     if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+      Notification.requestPermission().catch(() => { });
     }
 
     return () => unsubscribe();
@@ -125,10 +126,18 @@ function RobotTracker() {
     if (!tableName) return;
 
     try {
-      await update(ref(rtdb, ROBOT_ID), {
+      const isLast = isLastRouteStop(robot, tableName);
+      const updates = {
         [`${tableName}/confirmed`]: true,
         [`${tableName}/status`]: true,
-      });
+      };
+
+      if (isLast) {
+        updates.home = true;
+        updates.trip_status = TRIP_STATUSES.RETURNING;
+      }
+
+      await update(ref(rtdb, ROBOT_ID), updates);
     } catch (error) {
       console.error("Error confirming delivery:", error);
       alert("Failed to confirm delivery. Please try again.");
@@ -197,231 +206,155 @@ function RobotTracker() {
   const { totalStops, completedStops, activeStop, completion } = getProgressStats(robot);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#08111f] text-white">
+    <div className="min-h-screen bg-[#08111f] text-white font-sans relative pb-12 select-none">
+      {/* Background gradients */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-16 top-0 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
         <div className="absolute right-0 top-24 h-80 w-80 rounded-full bg-fuchsia-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-8">
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="mb-2 text-[11px] font-black uppercase tracking-[0.35em] text-cyan-200/80">
-              Waiter Tracking Console
-            </p>
-            <h1 className="text-4xl font-black tracking-tight md:text-5xl">{ROBOT_ID}</h1>
-          </div>
+      <div className="relative mx-auto max-w-md px-4 py-6">
+        {/* Header */}
+        <header className="mb-6 flex items-center justify-between">
           <button
             onClick={() => navigate("/robot")}
-            className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-100 backdrop-blur transition hover:bg-white/10"
+            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition active:scale-95 text-slate-300"
           >
-            Back
+            ←
           </button>
+          <div className="text-center">
+            <h1 className="text-xl font-black tracking-tight">{ROBOT_ID}</h1>
+            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-400/80">Waiter Tracking Console</p>
+          </div>
+          <div className="w-10 h-10" /> {/* Spacer */}
         </header>
 
-        <section className="mb-6 overflow-hidden rounded-[32px] border border-white/10 bg-white/5 shadow-2xl backdrop-blur">
-          <div className={`bg-gradient-to-r ${statusMeta.glow} p-6 md:p-8`}>
-            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <div className={`mb-4 inline-flex items-center gap-3 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] ${statusMeta.accent}`}>
-                  <span className="h-2.5 w-2.5 rounded-full bg-current"></span>
-                  {statusMeta.label}
-                </div>
-                <h2 className="mb-3 text-3xl font-black tracking-tight md:text-4xl">
-                  {statusMeta.description}
-                </h2>
-                <p className="text-sm text-slate-200/80 md:text-base">
-                  Current position: {getTableLabel(robot.currentLocation)}. Route data now supports empty and indexed realtime values.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 md:min-w-[320px]">
-                <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-4">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                    Completion
-                  </p>
-                  <p className="text-3xl font-black tabular-nums">{completion}%</p>
-                </div>
-                <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-4">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                    Stops Done
-                  </p>
-                  <p className="text-3xl font-black tabular-nums">
-                    {completedStops}/{totalStops}
-                  </p>
-                </div>
-              </div>
+        {/* Live Status Header Card */}
+        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider ${statusMeta.accent}`}>
+              <span className="h-2 w-2 rounded-full bg-current animate-pulse"></span>
+              {statusMeta.label}
             </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-5">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                  Trip Status
-                </p>
-                <p className="text-2xl font-black">{statusMeta.label}</p>
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-5">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                  Current Location
-                </p>
-                <p className="text-2xl font-black">{getTableLabel(robot.currentLocation)}</p>
-              </div>
-              <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-5">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                  Active Route
-                </p>
-                <p className="text-lg font-black">
-                  {robot.route.length ? robot.route.map(getTableLabel).join(" -> ") : "No active stops"}
-                </p>
-              </div>
-            </div>
+            <p className="text-xs font-black text-slate-400">
+              {completedStops}/{totalStops} Stops Done
+            </p>
           </div>
-        </section>
 
-        <section className="mb-6 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                  Route Timeline
-                </p>
-                <h3 className="text-2xl font-black tracking-tight">Live stop progress</h3>
+          <p className="text-sm text-slate-300 mb-4">{statusMeta.description}</p>
+
+          {totalStops > 0 && (
+            <div>
+              <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                <span>Progress</span>
+                <span>{completion}%</span>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-300">
-                {robot.route.length ? `${robot.route.length} scheduled stops` : "Standing by"}
-              </span>
+              <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-cyan-400 via-sky-400 to-emerald-400 transition-all duration-500"
+                  style={{ width: `${completion}%` }}
+                />
+              </div>
             </div>
+          )}
+        </div>
 
-            <div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-400 transition-all duration-500"
-                style={{ width: `${completion}%` }}
-              />
-            </div>
+        {/* Action Center - Shown at top priority when user needs to act */}
+        {canConfirm && (
+          <div className="mb-6 rounded-3xl border-2 border-amber-500/40 bg-amber-500/5 p-5 backdrop-blur shadow-2xl">
+            <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1">Action Required</p>
+            <h3 className="text-lg font-black text-white mb-3">Robot Arrived</h3>
+            <p className="text-xs text-slate-300 mb-4">
+              {robot.tables[currentTable]?.mission === "pass_through"
+                ? `Confirm pass-through at ${getTableLabel(currentTable)} to let the robot resume.`
+                : `Confirm food delivery for ${getTableLabel(currentTable)}.`}
+            </p>
+            <button
+              onClick={handleConfirmDelivered}
+              className="w-full rounded-2xl bg-linear-to-r from-amber-400 to-orange-400 px-5 py-4 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/25 active:scale-98 transition transform hover:scale-[1.01]"
+            >
+              {robot.tables[currentTable]?.mission === "pass_through"
+                ? `Confirm Pass-through at ${getTableLabel(currentTable)}`
+                : `Confirm Delivered at ${getTableLabel(currentTable)}`}
+            </button>
+          </div>
+        )}
 
-            <div className="space-y-4">
-              {robot.route.length ? (
-                robot.route.map((tableName, index) => {
-                  const table = robot.tables[tableName];
-                  const stageState = getStageState(robot, tableName, activeStop);
-                  const stageClasses = {
-                    complete: "border-emerald-400/30 bg-emerald-400/10",
-                    active: "border-amber-400/40 bg-amber-400/10",
-                    queued: "border-sky-400/30 bg-sky-400/10",
-                    inactive: "border-white/10 bg-white/[0.03]",
-                  };
+        {/* Fallback manual return button */}
+        {canSendHome && (
+          <div className="mb-6 rounded-3xl border-2 border-emerald-500/40 bg-emerald-500/5 p-5 backdrop-blur shadow-xl text-center">
+            <h3 className="text-lg font-black text-white mb-2">Trip Completed</h3>
+            <p className="text-xs text-slate-300 mb-4">All delivery stops have been confirmed.</p>
+            <button
+              onClick={handleSendHome}
+              className="w-full rounded-2xl bg-linear-to-r from-emerald-400 to-cyan-400 px-5 py-4 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/20 active:scale-98 transition transform hover:scale-[1.01]"
+            >
+              Send Robot Home
+            </button>
+          </div>
+        )}
 
-                  return (
-                    <div
-                      key={tableName}
-                      className={`rounded-[24px] border p-4 transition-colors ${stageClasses[stageState]}`}
-                    >
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                            Stop {index + 1}
-                          </p>
-                          <p className="text-xl font-black">{getTableLabel(tableName)}</p>
-                        </div>
-                        <span className="rounded-full border border-white/10 bg-[#08111f]/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-200">
-                          {stageState}
+        {/* Route Timeline stops progress */}
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur shadow-xl">
+          <h3 className="text-md font-black tracking-tight mb-4 flex items-center justify-between">
+            <span>Route Timeline</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-white/5 px-2.5 py-1 rounded-full">
+              {robot.route.length ? `${robot.route.length} stops` : "Standby"}
+            </span>
+          </h3>
+
+          <div className="space-y-3.5">
+            {robot.route.length ? (
+              robot.route.map((tableName, index) => {
+                const table = robot.tables[tableName];
+                const stageState = getStageState(robot, tableName, activeStop);
+
+                // Color codes: complete (green), active (amber/waiting), queued (blue)
+                const classes = {
+                  complete: "border-emerald-500/20 bg-emerald-500/5 text-emerald-300",
+                  active: "border-amber-500/20 bg-amber-500/5 text-amber-300",
+                  queued: "border-sky-500/20 bg-sky-500/5 text-slate-300",
+                  inactive: "border-white/5 bg-white/[0.02] text-slate-500",
+                };
+
+                return (
+                  <div
+                    key={tableName}
+                    className={`rounded-2xl border p-4 transition-colors flex items-center justify-between ${classes[stageState]}`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                          Stop {index + 1}
+                        </span>
+                        <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-slate-400">
+                          {table.mission === "pass_through" ? "Transit" : "Delivery"}
                         </span>
                       </div>
-                      <div className="grid gap-2 text-sm text-slate-200/80 md:grid-cols-4">
-                        <p>Mission: {table.mission}</p>
-                        <p>Arrived: {table.arrived ? "Yes" : "No"}</p>
-                        <p>Confirmed: {table.confirmed ? "Yes" : "No"}</p>
-                        <p>Status: {table.status ? "Served" : "Pending"}</p>
-                      </div>
+                      <p className="text-md font-black">{getTableLabel(tableName)}</p>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[24px] border border-dashed border-white/10 bg-[#08111f]/30 px-5 py-8 text-center text-slate-300">
-                  No route is active right now. The console will automatically refresh when new stops are dispatched.
-                </div>
-              )}
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                Action Center
-              </p>
-              <h3 className="mb-3 text-2xl font-black tracking-tight">Next waiter action</h3>
-              <p className="mb-5 text-sm text-slate-300">
-                {canConfirm
-                  ? `Confirm the drop at ${getTableLabel(currentTable)} so the robot can continue.`
-                  : canSendHome
-                    ? "All deliveries are complete. Send the robot back to docking."
-                    : "Tracking is live. No waiter confirmation is needed at this moment."}
-              </p>
-
-              {canConfirm && (
-                <button
-                  onClick={handleConfirmDelivered}
-                  className="mb-3 w-full rounded-[24px] bg-gradient-to-r from-amber-400 to-orange-400 px-5 py-4 text-base font-black text-slate-950 shadow-[0_18px_40px_rgba(251,191,36,0.25)] transition hover:scale-[0.99] active:scale-[0.98]"
-                >
-                  Confirm Delivered at {getTableLabel(currentTable)}
-                </button>
-              )}
-
-              {canSendHome && (
-                <button
-                  onClick={handleSendHome}
-                  className="mb-3 w-full rounded-[24px] bg-gradient-to-r from-emerald-300 to-cyan-300 px-5 py-4 text-base font-black text-slate-950 shadow-[0_18px_40px_rgba(52,211,153,0.2)] transition hover:scale-[0.99] active:scale-[0.98]"
-                >
-                  Send Robot Home
-                </button>
-              )}
-
-              {!canConfirm && !canSendHome && (
-                <div className="rounded-[24px] border border-white/10 bg-[#08111f]/40 p-4 text-sm text-slate-300">
-                  Live tracking is active. Waiting for the next robot state.
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400">
-                Floor Snapshot
-              </p>
-              <h3 className="mb-4 text-2xl font-black tracking-tight">All table states</h3>
-
-              <div className="grid gap-3">
-                {TABLES.map((tableName) => {
-                  const table = robot.tables[tableName];
-                  const stageState = getStageState(robot, tableName, activeStop);
-                  const classes = {
-                    complete: "border-emerald-400/30 bg-emerald-400/10",
-                    active: "border-amber-400/40 bg-amber-400/10",
-                    queued: "border-sky-400/30 bg-sky-400/10",
-                    inactive: "border-white/10 bg-[#08111f]/30",
-                  };
-
-                  return (
-                    <div key={tableName} className={`rounded-[24px] border p-4 ${classes[stageState]}`}>
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-lg font-black">{getTableLabel(tableName)}</p>
-                        <span className="rounded-full border border-white/10 bg-[#08111f]/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-200">
-                          {stageState}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
-                        <p>Mission: {table.mission}</p>
-                        <p>Status: {table.status ? "Served" : "Pending"}</p>
-                        <p>Arrived: {table.arrived ? "Yes" : "No"}</p>
-                        <p>Confirmed: {table.confirmed ? "Yes" : "No"}</p>
-                      </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-black uppercase tracking-widest bg-[#08111f]/60 px-3 py-1 rounded-full border border-white/5">
+                        {stageState === "complete"
+                          ? (table.mission === "pass_through" ? "Passed" : "Delivered")
+                          : stageState === "active"
+                            ? (table.arrived ? "At Table" : "En Route")
+                            : "Queued"
+                        }
+                      </span>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-[#08111f]/20 px-4 py-8 text-center text-xs text-slate-400">
+                Robot is idle. Wait for kitchen dispatch.
               </div>
-            </div>
+            )}
           </div>
-        </section>
+        </div>
+
       </div>
     </div>
   );

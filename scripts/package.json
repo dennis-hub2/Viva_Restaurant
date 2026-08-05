@@ -1,0 +1,14 @@
+{
+  "name": "viva-restaurant-sync-daemon",
+  "version": "1.0.0",
+  "description": "Local synchronization daemon between Firestore and Realtime Database",
+  "main": "sync_daemon.js",
+  "type": "module",
+  "scripts": {
+    "start": "node sync_daemon.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "private": true
+}

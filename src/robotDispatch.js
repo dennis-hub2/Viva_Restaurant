@@ -1,27 +1,3 @@
-// robotDispatch.js
-//
-// Client-side replacement for the two Cloud Functions:
-//   - syncReadyOrders            (was: functions.firestore.document('orders/{orderId}').onWrite)
-//   - dispatchQueuedOrdersWhenRobotIdle (was: functions.database.ref('swagbot1/trip_status').onWrite)
-//
-// WHY THIS EXISTS:
-// Cloud Functions require the Blaze plan (specifically cloudbuild.googleapis.com).
-// This file reproduces the same dispatch logic using only the Firebase Web SDK,
-// which works fine on the free Spark plan. It must run inside a persistent
-// "backend" client (e.g. a kitchen/staff dashboard page) that stays open,
-// since there's no server pushing this logic anymore - a live listener has
-// to replace the trigger.
-//
-// REQUIREMENTS:
-// 1. The signed-in user must have a custom claim auth.token.role === 'backend'
-//    (set once via the Admin SDK from a local script - see note at bottom).
-// 2. Firestore & RTDB security rules must allow that 'backend' role to:
-//    - read orders where status == 'ready'
-//    - update orders (assignedRobot, dispatchedAt)
-//    - read/write swagbot1/* in RTDB
-// 3. Call initDispatchListeners() once, after the user is authenticated,
-//    e.g. on app startup / dashboard mount. Keep the tab open.
-
 import {
   getFirestore,
   collection,
@@ -32,6 +8,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  getDocs,
 } from "firebase/firestore";
 
 import {
@@ -93,13 +70,26 @@ function sortRoute(route) {
   );
 }
 
+function expandRoute(route) {
+  if (!route || route.length === 0) return [];
+  let maxIndex = -1;
+  route.forEach((tbl) => {
+    const idx = TABLES.indexOf(tbl);
+    if (idx > maxIndex) {
+      maxIndex = idx;
+    }
+  });
+  if (maxIndex === -1) return [];
+  return TABLES.slice(0, maxIndex + 1);
+}
+
 function normalizeRouteValue(route) {
   const routeValues = Array.isArray(route)
     ? route
     : route && typeof route === "object"
       ? Object.entries(route)
-          .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
-          .map(([, value]) => value)
+        .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
+        .map(([, value]) => value)
       : [];
 
   return sortRoute(
@@ -119,7 +109,7 @@ function canStartTrip(robot = {}) {
   );
 }
 
-function buildTripState(route = []) {
+function buildTripState(route = [], targets = []) {
   const nextRobot = buildIdleRobotState();
   nextRobot.move = true;
   nextRobot.route = route;
@@ -127,14 +117,23 @@ function buildTripState(route = []) {
   nextRobot.trip_status = "en_route";
 
   for (const tableName of TABLES) {
-    nextRobot[tableName] = route.includes(tableName)
-      ? {
-          mission: "destination",
-          status: false,
-          arrived: false,
-          confirmed: false,
-        }
-      : tableState();
+    if (targets.includes(tableName)) {
+      nextRobot[tableName] = {
+        mission: "destination",
+        status: false,
+        arrived: false,
+        confirmed: false,
+      };
+    } else if (route.includes(tableName)) {
+      nextRobot[tableName] = {
+        mission: "pass_through",
+        status: false,
+        arrived: false,
+        confirmed: false,
+      };
+    } else {
+      nextRobot[tableName] = tableState();
+    }
   }
 
   return nextRobot;
@@ -176,11 +175,13 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
       return !data.assignedRobot && getOrderTableName(data);
     });
 
-    const route = sortRoute(
+    const targets = sortRoute(
       dispatchableOrders
         .map((docSnap) => getOrderTableName(docSnap.data()))
-        .filter(Boolean),
+        .filter(Boolean)
     );
+    const activeTargets = targets.slice(0, 2);
+    const route = expandRoute(activeTargets);
 
     if (route.length === 0) {
       dispatchState.lastSuccessAt = new Date();
@@ -193,7 +194,7 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
       if (!canStartTrip(currentRobot)) {
         return;
       }
-      return buildTripState(route);
+      return buildTripState(route, activeTargets);
     });
 
     if (!transactionResult.committed) {
@@ -201,8 +202,12 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
       return;
     }
 
+    const ordersToAssign = dispatchableOrders.filter((docSnap) => {
+      return activeTargets.includes(getOrderTableName(docSnap.data()));
+    });
+
     const batch = writeBatch(firestore);
-    dispatchableOrders.forEach((docSnap) => {
+    ordersToAssign.forEach((docSnap) => {
       batch.update(doc(firestore, "orders", docSnap.id), {
         assignedRobot: ROBOT_ID,
         dispatchedAt: serverTimestamp(),
@@ -233,6 +238,7 @@ export function initDispatchListeners() {
   const firestore = getFirestore();
   const database = getDatabase();
   dispatchState.listenersActive = true;
+  console.log("[Client Sync] Active dispatch listeners initialized on client tab.");
 
   let previousReadyIds = new Set();
 
@@ -242,6 +248,7 @@ export function initDispatchListeners() {
   );
 
   const unsubOrders = onSnapshot(readyOrdersQuery, (snapshot) => {
+    console.log(`[Client Sync] Firestore snapshot received. ${snapshot.size} orders are currently 'ready'.`);
     const currentReadyIds = new Set(snapshot.docs.map((d) => d.id));
     const justBecameReady = [...currentReadyIds].some(
       (id) => !previousReadyIds.has(id),
@@ -249,6 +256,7 @@ export function initDispatchListeners() {
     previousReadyIds = currentReadyIds;
 
     if (justBecameReady) {
+      console.log("[Client Sync] New 'ready' order detected in Firestore. Checking robot availability...");
       dispatchReadyOrdersIfPossible(firestore, database);
     }
   });
@@ -258,17 +266,58 @@ export function initDispatchListeners() {
 
   const unsubTripStatus = onValue(tripStatusRef, (snapshot) => {
     const afterStatus = snapshot.val();
+    console.log(`[Client Sync] RTDB: Robot '${ROBOT_ID}' trip_status is '${afterStatus}'.`);
     const becameIdle = afterStatus === "idle" && previousTripStatus !== "idle";
     previousTripStatus = afterStatus;
 
     if (becameIdle) {
+      console.log("[Client Sync] Robot is now idle. Triggering dispatch for any queued orders...");
       dispatchReadyOrdersIfPossible(firestore, database);
     }
+  });
+
+  const unsubsTables = TABLES.map((tableName) => {
+    const tableConfirmedRef = ref(database, `${ROBOT_ID}/${tableName}/confirmed`);
+    return onValue(tableConfirmedRef, async (snapshot) => {
+      const confirmed = snapshot.val();
+      if (confirmed === true) {
+        console.log(`[Client Sync] Table ${tableName} confirmed in RTDB. Syncing to Firestore...`);
+        try {
+          const readyOrdersQuery = query(
+            collection(firestore, "orders"),
+            where("status", "==", "ready"),
+            where("assignedRobot", "==", ROBOT_ID)
+          );
+          const snap = await getDocs(readyOrdersQuery);
+          const batch = writeBatch(firestore);
+          let count = 0;
+
+          snap.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (getOrderTableName(data) === tableName) {
+              batch.update(doc(firestore, "orders", docSnap.id), {
+                status: "completed",
+                completedAt: serverTimestamp(),
+              });
+              count++;
+            }
+          });
+
+          if (count > 0) {
+            await batch.commit();
+            console.log(`[Client Sync] Marked ${count} orders for ${tableName} as completed in Firestore.`);
+          }
+        } catch (e) {
+          console.error(`[Client Sync] Error updating orders for ${tableName}:`, e);
+        }
+      }
+    });
   });
 
   return () => {
     unsubOrders();
     unsubTripStatus();
+    unsubsTables.forEach((unsub) => unsub());
     dispatchState.listenersActive = false;
   };
 }
@@ -300,10 +349,16 @@ export async function assignRobotForOrder(order) {
   const robot = robotSnapshot.val() || buildIdleRobotState();
 
   if (!canStartTrip(robot)) {
-    throw new Error("robot-busy");
+    // Robot is busy, but we manually assign the order in Firestore anyway (it queues for the next trip)
+    await updateDoc(doc(firestore, "orders", orderId), {
+      assignedRobot: ROBOT_ID,
+      dispatchedAt: serverTimestamp(),
+      status: "ready",
+    });
+    return { queued: true };
   }
 
-  const payload = buildTripState([tableName]);
+  const payload = buildTripState(expandRoute([tableName]), [tableName]);
 
   const transactionResult = await runTransaction(robotRef, (current) => {
     const currentRobot = current || buildIdleRobotState();
@@ -314,7 +369,13 @@ export async function assignRobotForOrder(order) {
   });
 
   if (!transactionResult.committed) {
-    throw new Error("robot-claim-failed");
+    // If claim failed during transaction, we still assign the order in Firestore!
+    await updateDoc(doc(firestore, "orders", orderId), {
+      assignedRobot: ROBOT_ID,
+      dispatchedAt: serverTimestamp(),
+      status: "ready",
+    });
+    return { queued: true };
   }
 
   await updateDoc(doc(firestore, "orders", orderId), {
@@ -326,7 +387,7 @@ export async function assignRobotForOrder(order) {
   dispatchState.lastSuccessAt = new Date();
   dispatchState.lastError = null;
 
-  return getDispatchStatus();
+  return { queued: false };
 }
 
 export function getDispatchStatus() {

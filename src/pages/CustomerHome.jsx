@@ -6,6 +6,7 @@ import CategoryTabs from "../Components/CategoryTabs";
 import MenuCard from "../Components/MenuCard";
 import CartDrawer from "../Components/CartDrawer";
 import ContactSection from "../Components/ContactSection";
+import ActiveOrderTracker from "../Components/ActiveOrderTracker";
 
 // 1. NEW: Firebase imports (We deleted the local menuData import!)
 import {
@@ -27,6 +28,9 @@ const CustomerHome = () => {
   // 2. NEW: State to hold the live database menu
   const [menuItems, setMenuItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- Order Tracking States ---
+  const [activeOrderId, setActiveOrderId] = useState(() => localStorage.getItem("active_order_id") || null);
 
   // --- The Live Firebase Listener ---
   useEffect(() => {
@@ -122,6 +126,12 @@ const CustomerHome = () => {
       setCart([]);
       setIsCartOpen(false);
 
+      // Save order to tracking state
+      const orderId = newOrderRef.id;
+      localStorage.setItem("active_order_id", orderId);
+      localStorage.setItem("customer_table_number", String(tableNumber));
+      setActiveOrderId(orderId);
+
       setToastMessage(`Order placed successfully for Table ${tableNumber}! 🤖`);
       setTimeout(() => setToastMessage(""), 4000);
     } catch (error) {
@@ -166,6 +176,8 @@ const CustomerHome = () => {
     return () => unsubscribe();
   }, []);
 
+
+
   return (
     <div className="min-h-screen bg-[#FAF1E4] px-6 md:px-12 lg:px-20 pb-20 font-sans relative">
       <div className="max-w-7xl mx-auto">
@@ -187,7 +199,7 @@ const CustomerHome = () => {
           <div className="lg:hidden w-full flex justify-center mt-12 pb-10">
             <a
               href="#menu"
-              className="inline-block bg-[#DE6555] text-white font-bold text-lg py-4 px-10 rounded-full shadow-[0px_6px_0px_#A54538] hover:translate-y-[2px] hover:shadow-[0px_4px_0px_#A54538] transition-all active:translate-y-[6px] active:shadow-none"
+              className="inline-block bg-[#DE6555] text-white font-bold text-lg py-4 px-10 rounded-full shadow-[0px_6px_0px_#A54538] hover:translate-y-0.5 hover:shadow-[0px_4px_0px_#A54538] transition-all active:translate-y-1.5 active:shadow-none"
             >
               Food Menu
             </a>
@@ -198,7 +210,7 @@ const CustomerHome = () => {
           className="scroll-mt-24 mt-32 pt-10 border-t border-[#332a2415]"
           id="menu"
         >
-          <h2 className="text-5xl md:text-6xl font-black text-[#332A24] font-['Fredoka',_sans-serif] mb-4">
+          <h2 className="text-5xl md:text-6xl font-black text-[#332A24] `font-['Fredoka',_sans-serif]` mb-4">
             Our Menu
           </h2>
           <CategoryTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -237,10 +249,14 @@ const CustomerHome = () => {
       />
 
       {toastMessage && (
-        <div className="fixed bottom-10 right-6 bg-[#332A24] text-white px-6 py-4 rounded-2xl shadow-2xl z-[100] animate-bounce">
+        <div className="fixed bottom-10 right-6 bg-[#332A24] text-white px-6 py-4 rounded-2xl shadow-2xl z-100 animate-bounce">
           {toastMessage}
         </div>
       )}
+      <ActiveOrderTracker
+        activeOrderId={activeOrderId}
+        setActiveOrderId={setActiveOrderId}
+      />
     </div>
   );
 };
