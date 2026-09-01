@@ -3,6 +3,7 @@
     ".read": true,
     "swagbot1": {
       ".read": true,
+      ".write": "auth != null",
       "route": {
         ".write": "auth.token.role === 'backend' || auth != null",
         ".validate": "newData.val() === null || (!newData.isString() && !newData.isNumber() && !newData.isBoolean())",

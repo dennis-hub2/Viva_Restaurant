@@ -78,16 +78,16 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
       const tableKey = `table${activeOrder.table}`;
       const tableState = robotState?.[tableKey];
 
-      if (tableState?.arrived === true && tableState?.confirmed === false) {
-        return {
-          step: 4,
-          title: "Robot Arrived! 🤖",
-          desc: "Swagbot1 is at your table! Please pick up your food.",
-          color: "text-emerald-400 font-bold animate-bounce",
-        };
-      }
+      // Safe arrival check
+      const isArrived =
+        tableState?.arrived === true ||
+        (robotState?.current_location === tableKey &&
+          robotState?.trip_status === "waiting_confirmation");
 
-      if (tableState?.confirmed === true) {
+      // Confirmation is ONLY valid if the robot actually arrived at the table during this trip
+      const isConfirmed = tableState?.confirmed === true && isArrived;
+
+      if (isConfirmed) {
         return {
           step: 5,
           title: "Delivered",
@@ -96,9 +96,19 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
         };
       }
 
+      if (isArrived) {
+        return {
+          step: 4,
+          title: "Robot Arrived! 🤖",
+          desc: "Swagbot1 is at your table! Please pick up your food.",
+          color: "text-emerald-400 font-bold animate-bounce",
+        };
+      }
+
       const currentLoc = robotState?.current_location
         ? String(robotState.current_location).replace("table", "Table ")
         : "Docking";
+
       return {
         step: 3,
         title: "Robot En Route 🤖",

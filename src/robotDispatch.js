@@ -44,7 +44,6 @@ function buildIdleRobotState() {
     home: false,
     move: false,
     route: [],
-    active_table: null,
     trip_status: "idle",
     table1: tableState(),
     table2: tableState(),
@@ -113,7 +112,6 @@ function buildTripState(route = [], targets = []) {
   const nextRobot = buildIdleRobotState();
   nextRobot.move = true;
   nextRobot.route = route;
-  nextRobot.active_table = route[0] || null;
   nextRobot.trip_status = "en_route";
 
   for (const tableName of TABLES) {
@@ -238,43 +236,7 @@ export function initDispatchListeners() {
   const firestore = getFirestore();
   const database = getDatabase();
   dispatchState.listenersActive = true;
-  console.log("[Client Sync] Active dispatch listeners initialized on client tab.");
-
-  let previousReadyIds = new Set();
-
-  const readyOrdersQuery = query(
-    collection(firestore, "orders"),
-    where("status", "==", "ready"),
-  );
-
-  const unsubOrders = onSnapshot(readyOrdersQuery, (snapshot) => {
-    console.log(`[Client Sync] Firestore snapshot received. ${snapshot.size} orders are currently 'ready'.`);
-    const currentReadyIds = new Set(snapshot.docs.map((d) => d.id));
-    const justBecameReady = [...currentReadyIds].some(
-      (id) => !previousReadyIds.has(id),
-    );
-    previousReadyIds = currentReadyIds;
-
-    if (justBecameReady) {
-      console.log("[Client Sync] New 'ready' order detected in Firestore. Checking robot availability...");
-      dispatchReadyOrdersIfPossible(firestore, database);
-    }
-  });
-
-  let previousTripStatus = null;
-  const tripStatusRef = ref(database, `${ROBOT_ID}/trip_status`);
-
-  const unsubTripStatus = onValue(tripStatusRef, (snapshot) => {
-    const afterStatus = snapshot.val();
-    console.log(`[Client Sync] RTDB: Robot '${ROBOT_ID}' trip_status is '${afterStatus}'.`);
-    const becameIdle = afterStatus === "idle" && previousTripStatus !== "idle";
-    previousTripStatus = afterStatus;
-
-    if (becameIdle) {
-      console.log("[Client Sync] Robot is now idle. Triggering dispatch for any queued orders...");
-      dispatchReadyOrdersIfPossible(firestore, database);
-    }
-  });
+  console.log("[Client Sync] Active dispatch listeners initialized (Manual Dispatch Mode).");
 
   const unsubsTables = TABLES.map((tableName) => {
     const tableConfirmedRef = ref(database, `${ROBOT_ID}/${tableName}/confirmed`);
@@ -315,8 +277,6 @@ export function initDispatchListeners() {
   });
 
   return () => {
-    unsubOrders();
-    unsubTripStatus();
     unsubsTables.forEach((unsub) => unsub());
     dispatchState.listenersActive = false;
   };
@@ -330,10 +290,11 @@ export async function runManualDispatch() {
   return getDispatchStatus();
 }
 
-export async function assignRobotForOrder(order) {
+export async function assignRobotForOrder(order, chosenRobotId = ROBOT_ID) {
   const firestore = getFirestore();
   const database = getDatabase();
-  const robotRef = ref(database, ROBOT_ID);
+  const targetRobotId = chosenRobotId || ROBOT_ID;
+  const robotRef = ref(database, targetRobotId);
   const tableName = getOrderTableName(order);
 
   if (!tableName) {
@@ -345,41 +306,27 @@ export async function assignRobotForOrder(order) {
     throw new Error("missing-order-id");
   }
 
-  const robotSnapshot = await get(robotRef);
-  const robot = robotSnapshot.val() || buildIdleRobotState();
+  const route = expandRoute([tableName]);
+  const activeTargets = [tableName];
+  const payload = buildTripState(route, activeTargets);
 
-  if (!canStartTrip(robot)) {
-    // Robot is busy, but we manually assign the order in Firestore anyway (it queues for the next trip)
-    await updateDoc(doc(firestore, "orders", orderId), {
-      assignedRobot: ROBOT_ID,
-      dispatchedAt: serverTimestamp(),
-      status: "ready",
-    });
-    return { queued: true };
-  }
+  // Enforce clean state for destination table (reset arrived and confirmed flags)
+  payload[tableName] = {
+    mission: "destination",
+    status: false,
+    arrived: false,
+    confirmed: false,
+  };
+  payload.home = false;
+  payload.move = true;
+  payload.trip_status = "en_route";
 
-  const payload = buildTripState(expandRoute([tableName]), [tableName]);
+  // Sync RTDB state
+  await runTransaction(robotRef, () => payload);
 
-  const transactionResult = await runTransaction(robotRef, (current) => {
-    const currentRobot = current || buildIdleRobotState();
-    if (!canStartTrip(currentRobot)) {
-      return;
-    }
-    return payload;
-  });
-
-  if (!transactionResult.committed) {
-    // If claim failed during transaction, we still assign the order in Firestore!
-    await updateDoc(doc(firestore, "orders", orderId), {
-      assignedRobot: ROBOT_ID,
-      dispatchedAt: serverTimestamp(),
-      status: "ready",
-    });
-    return { queued: true };
-  }
-
+  // Sync Firestore order
   await updateDoc(doc(firestore, "orders", orderId), {
-    assignedRobot: ROBOT_ID,
+    assignedRobot: targetRobotId,
     dispatchedAt: serverTimestamp(),
     status: "ready",
   });

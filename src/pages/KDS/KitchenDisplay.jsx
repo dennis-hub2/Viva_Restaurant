@@ -116,26 +116,22 @@ export default function KitchenDisplay() {
     }
   };
 
-  const handleAssignRobotNow = async () => {
+  const handleAssignRobotNow = async (robotId = "swagbot1") => {
     if (!selectedOrder) return;
 
     try {
-      const res = await assignRobotForOrder(selectedOrder);
+      const res = await assignRobotForOrder(selectedOrder, robotId);
       setDispatchStatus(getDispatchStatus());
       setSelectedOrder((current) =>
         current
           ? {
             ...current,
-            assignedRobot: "swagbot1",
+            assignedRobot: robotId,
             status: "ready",
           }
           : current,
       );
-      if (res?.queued) {
-        setToastMessage("Queued for Swagbot1's next trip!");
-      } else {
-        setToastMessage("Robot assigned successfully.");
-      }
+      setToastMessage(`Robot ${robotId.toUpperCase()} assigned & dispatched!`);
       setTimeout(() => setToastMessage(""), 3000);
     } catch (error) {
       console.error("Manual bot assignment failed:", error);
@@ -211,21 +207,7 @@ export default function KitchenDisplay() {
       await updateDoc(orderRef, updateData);
 
       if (newStatus === "ready") {
-        const updatedOrder = {
-          ...(selectedOrder || {}),
-          id,
-          status: "ready",
-          assignedRobot: selectedOrder?.assignedRobot,
-          table: selectedOrder?.table,
-          tableNumber: selectedOrder?.tableNumber,
-        };
-        const res = await assignRobotForOrder(updatedOrder);
-        setDispatchStatus(getDispatchStatus());
-        if (res?.queued) {
-          setToastMessage("Queued for Swagbot1's next trip!");
-        } else {
-          setToastMessage("Robot assigned automatically.");
-        }
+        setToastMessage("Order marked ready. Please select a robot to dispatch.");
         setTimeout(() => setToastMessage(""), 3000);
       }
 

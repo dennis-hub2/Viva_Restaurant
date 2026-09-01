@@ -11,6 +11,8 @@ function OrderDetailModal({
   handleAssignRobotNow,
   handleUpdateStatus,
 }) {
+  const [selectedBot, setSelectedBot] = React.useState("swagbot1");
+
   if (!order) return null;
 
   return (
@@ -144,36 +146,37 @@ function OrderDetailModal({
               </button>
             </div>
           ) : order.status === "ready" ? (
-            <div className="flex flex-col gap-8">
-              <div className="bg-blue-50 border-2 border-blue-100 p-8 rounded-3xl text-center shadow-inner">
-                <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.5em] mb-3">
+            <div className="flex flex-col gap-6">
+              <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl text-center shadow-inner">
+                <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.5em] mb-2">
                   Unit Deployment
                 </p>
                 <p className="text-gray-900 font-black text-2xl tracking-tighter italic">
                   {order.assignedRobot
-                    ? `Robot ${order.assignedRobot.toUpperCase()} is En Route`
-                    : "Waiting for Available Unit..."}
+                    ? `Robot ${order.assignedRobot.toUpperCase()} Assigned & En Route`
+                    : "Ready - Select Unit for Dispatch"}
                 </p>
               </div>
-              {!dispatchEnabled && (
-                <button
-                  onClick={handleManualDispatch}
-                  className="w-full bg-blue-600 hover:bg-gray-900 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+
+              {/* Robot Selector */}
+              <div className="bg-gray-50 border-2 border-gray-200 p-4 rounded-2xl flex items-center justify-between gap-4">
+                <label className="text-xs font-black uppercase text-gray-700 tracking-wider">
+                  Select Robot:
+                </label>
+                <select
+                  value={selectedBot}
+                  onChange={(e) => setSelectedBot(e.target.value)}
+                  className="bg-white border-2 border-gray-300 font-black text-sm text-gray-900 px-4 py-2 rounded-xl outline-none focus:border-blue-600"
                 >
-                  Manual Dispatch Fallback
-                </button>
-              )}
+                  <option value="swagbot1">Swagbot 1 (Idle / Docked)</option>
+                </select>
+              </div>
+
               <button
-                onClick={handleAssignRobotNow}
-                className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                onClick={() => handleAssignRobotNow(selectedBot)}
+                className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-6 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
               >
-                Assign Bot Now
-              </button>
-              <button
-                onClick={() => handleUpdateStatus(order.id, "completed")}
-                className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
-              >
-                Confirm Delivery <Check size={24} strokeWidth={4} />
+                Dispatch {selectedBot.toUpperCase()} Now <ChevronRight size={24} strokeWidth={4} />
               </button>
             </div>
           ) : order.status === "completed" && !order.assignedRobot ? (
