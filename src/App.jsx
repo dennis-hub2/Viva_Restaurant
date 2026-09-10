@@ -11,34 +11,10 @@ import AdminLogin from "./pages/Admin/AdminLogin";
 import RobotAccess from "./pages/Waiter/RobotAccess";
 import RobotTracker from "./pages/Waiter/RobotTracker";
 
-const ADMIN_EMAIL = "admin1@viva.com";
-
-const isAuthorizedAdmin = (user) =>
-  typeof user?.email === "string" && user.email.trim().toLowerCase() === ADMIN_EMAIL;
-
 const ProtectedRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const isAuth = localStorage.getItem("viva_admin_session") === "true";
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) return (
-    <div className="min-h-screen bg-[#1A1A1D] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[#6539A3]"></div>
-    </div>
-  );
-
-  if (!user) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
-  if (!isAuthorizedAdmin(user)) {
+  if (!isAuth) {
     return <Navigate to="/admin/login" replace />;
   }
 

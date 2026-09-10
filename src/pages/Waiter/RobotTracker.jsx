@@ -14,8 +14,8 @@ import {
 } from "../../data/robotProtocol";
 
 const tripStatusMeta = {
-  [TRIP_STATUSES.IDLE]: {
-    label: "Idle",
+  [TRIP_STATUSES.DOCKING]: {
+    label: "Docked",
     accent: "text-emerald-200 border-emerald-400/30 bg-emerald-400/10",
     glow: "from-emerald-400/20 via-emerald-300/10 to-transparent",
     description: "Docked and ready for the next dispatch.",
@@ -26,17 +26,11 @@ const tripStatusMeta = {
     glow: "from-sky-400/20 via-sky-300/10 to-transparent",
     description: "Moving through the dining floor now.",
   },
-  [TRIP_STATUSES.WAITING_CONFIRMATION]: {
-    label: "Waiting Confirmation",
+  [TRIP_STATUSES.ARRIVED]: {
+    label: "Arrived at Table",
     accent: "text-amber-100 border-amber-400/30 bg-amber-400/10",
     glow: "from-amber-400/20 via-amber-300/10 to-transparent",
     description: "Robot is stopped at a table and waiting for waiter confirmation.",
-  },
-  [TRIP_STATUSES.AWAITING_RETURN]: {
-    label: "Awaiting Return",
-    accent: "text-orange-100 border-orange-400/30 bg-orange-400/10",
-    glow: "from-orange-400/20 via-orange-300/10 to-transparent",
-    description: "All drops are done. Send the robot home when the lane is clear.",
   },
   [TRIP_STATUSES.RETURNING]: {
     label: "Returning",
@@ -104,38 +98,49 @@ function RobotTracker() {
   const [robot, setRobot] = useState(null);
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
   const previousStatusRef = useRef(null);
 
   useEffect(() => {
     const robotRef = ref(rtdb, ROBOT_ID);
 
-    const unsubscribe = onValue(robotRef, (snapshot) => {
-      if (!snapshot.exists()) {
-        setRobot(null);
-        setIsLoading(false);
-        return;
-      }
-
-      const nextRobot = normalizeRobot(snapshot.val());
-      const currentTable = getCurrentTable(nextRobot);
-
-      if (
-        nextRobot.tripStatus === TRIP_STATUSES.WAITING_CONFIRMATION &&
-        previousStatusRef.current !== TRIP_STATUSES.WAITING_CONFIRMATION &&
-        currentTable
-      ) {
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("Delivery Waiting", {
-            body: `Confirm delivery for ${getTableLabel(currentTable)}.`,
-            icon: "/vite.svg",
-          });
+    const unsubscribe = onValue(
+      robotRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setRobot(null);
+          setErrorMsg(null);
+          setIsLoading(false);
+          return;
         }
-      }
 
-      previousStatusRef.current = nextRobot.tripStatus;
-      setRobot(nextRobot);
-      setIsLoading(false);
-    });
+        const nextRobot = normalizeRobot(snapshot.val());
+        const currentTable = getCurrentTable(nextRobot);
+
+        if (
+          nextRobot.tripStatus === TRIP_STATUSES.WAITING_CONFIRMATION &&
+          previousStatusRef.current !== TRIP_STATUSES.WAITING_CONFIRMATION &&
+          currentTable
+        ) {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Delivery Waiting", {
+              body: `Confirm delivery for ${getTableLabel(currentTable)}.`,
+              icon: "/vite.svg",
+            });
+          }
+        }
+
+        previousStatusRef.current = nextRobot.tripStatus;
+        setRobot(nextRobot);
+        setErrorMsg(null);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("RTDB subscription error:", error);
+        setErrorMsg(error.message || "Failed to connect to Firebase Realtime Database.");
+        setIsLoading(false);
+      }
+    );
 
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().catch(() => { });
@@ -171,17 +176,9 @@ function RobotTracker() {
     if (!tableName) return;
 
     try {
-      const isLast = isLastRouteStop(robot, tableName);
       const updates = {
         [`${tableName}/confirmed`]: true,
-        [`${tableName}/status`]: true,
       };
-
-      if (isLast) {
-        updates.home = true;
-        updates.move = true;
-        updates.trip_status = TRIP_STATUSES.RETURNING;
-      }
 
       await update(ref(rtdb, ROBOT_ID), updates);
 
@@ -201,18 +198,7 @@ function RobotTracker() {
     }
   };
 
-  const handleSendHome = async () => {
-    try {
-      await update(ref(rtdb, ROBOT_ID), {
-        home: true,
-        move: true,
-        trip_status: TRIP_STATUSES.RETURNING,
-      });
-    } catch (error) {
-      console.error("Error sending robot home:", error);
-      alert("Failed to send the robot home. Please try again.");
-    }
-  };
+
 
   if (id.toLowerCase() !== ROBOT_ID) {
     return (
@@ -237,6 +223,31 @@ function RobotTracker() {
     );
   }
 
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-[#08111f] flex flex-col items-center justify-center p-6 text-center text-white">
+        <div className="max-w-md w-full rounded-3xl border border-red-500/30 bg-red-500/10 p-6 backdrop-blur">
+          <h2 className="text-xl font-black text-red-400 mb-2">Connection Error</h2>
+          <p className="text-xs text-slate-300 mb-6">{errorMsg}</p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate("/admin/login")}
+              className="w-full rounded-2xl bg-indigo-600 px-6 py-3 font-bold text-white hover:bg-indigo-500 transition"
+            >
+              Log In as Staff / Admin
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full rounded-2xl border border-white/10 bg-white/10 px-6 py-3 font-bold backdrop-blur"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!robot) {
     return (
       <div className="min-h-screen bg-[#08111f] flex flex-col items-center justify-center p-6 text-center text-white">
@@ -253,12 +264,9 @@ function RobotTracker() {
   }
 
   const currentTable = getCurrentTable(robot);
-  const canConfirm = robot.tripStatus === TRIP_STATUSES.WAITING_CONFIRMATION && currentTable;
-  const isAnyConfirmed = (robot.route || []).some((t) => robot.tables[t]?.confirmed);
-  const canSendHome =
-    robot.tripStatus === TRIP_STATUSES.AWAITING_RETURN ||
-    robot.home === true ||
-    (isAnyConfirmed && robot.tripStatus !== TRIP_STATUSES.RETURNING && robot.tripStatus !== TRIP_STATUSES.IDLE);
+  const canConfirm =
+    (robot.tripStatus === TRIP_STATUSES.ARRIVED || robot.tripStatus === "arrived" || robot.tripStatus === "waiting_confirmation") &&
+    currentTable;
   const statusMeta = tripStatusMeta[robot.tripStatus] || {
     label: formatTripStatus(robot.tripStatus),
     accent: "text-slate-100 border-white/10 bg-white/10",
@@ -275,7 +283,7 @@ function RobotTracker() {
     const tbl = normalizeOrderTable(o);
     if (!tbl) return false;
 
-    if (robot.tripStatus === TRIP_STATUSES.IDLE) {
+    if (robot.tripStatus === TRIP_STATUSES.DOCKING || robot.tripStatus === "idle") {
       return true;
     }
 
@@ -353,31 +361,13 @@ function RobotTracker() {
             <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 mb-1">Action Required</p>
             <h3 className="text-lg font-black text-white mb-3">Robot Arrived</h3>
             <p className="text-xs text-slate-300 mb-4">
-              {robot.tables[currentTable]?.mission === "pass_through"
-                ? `Confirm pass-through at ${getTableLabel(currentTable)} to let the robot resume.`
-                : `Confirm food delivery for ${getTableLabel(currentTable)}.`}
+              Confirm food delivery for {getTableLabel(currentTable)}.
             </p>
             <button
               onClick={handleConfirmDelivered}
               className="w-full rounded-2xl bg-linear-to-r from-amber-400 to-orange-400 px-5 py-4 text-sm font-black text-slate-950 shadow-lg shadow-amber-500/25 active:scale-98 transition transform hover:scale-[1.01]"
             >
-              {robot.tables[currentTable]?.mission === "pass_through"
-                ? `Confirm Pass-through at ${getTableLabel(currentTable)}`
-                : `Confirm Delivered at ${getTableLabel(currentTable)}`}
-            </button>
-          </div>
-        )}
-
-        {/* Return Home Button (Display after delivery confirmation) */}
-        {canSendHome && robot.tripStatus !== TRIP_STATUSES.RETURNING && (
-          <div className="mb-6 rounded-3xl border-2 border-cyan-500/40 bg-cyan-500/10 p-5 backdrop-blur shadow-xl text-center">
-            <h3 className="text-lg font-black text-white mb-1">Delivery Confirmed</h3>
-            <p className="text-xs text-slate-300 mb-4">Click below to command Swagbot1 to move back home.</p>
-            <button
-              onClick={handleSendHome}
-              className="w-full rounded-2xl bg-linear-to-r from-cyan-400 via-sky-400 to-emerald-400 px-5 py-4 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/25 active:scale-98 transition transform hover:scale-[1.01] flex items-center justify-center gap-2 uppercase tracking-wider"
-            >
-              <span>🏠 Return Home</span>
+              Confirm Delivered at {getTableLabel(currentTable)}
             </button>
           </div>
         )}
@@ -453,7 +443,7 @@ function RobotTracker() {
             {/* Station 0: Base Docking Station */}
             <div
               className={`rounded-2xl border p-4 transition-colors ${
-                robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.IDLE
+                robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.DOCKING || robot.tripStatus === "idle"
                   ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                   : robot.tripStatus === TRIP_STATUSES.RETURNING
                     ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
@@ -476,14 +466,14 @@ function RobotTracker() {
                 <div className="text-right">
                   <span
                     className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
-                      robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.IDLE
+                      robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.DOCKING || robot.tripStatus === "idle"
                         ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold"
                         : robot.tripStatus === TRIP_STATUSES.RETURNING
                           ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
                           : "bg-[#08111f]/60 text-slate-400 border-white/5"
                     }`}
                   >
-                    {robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.IDLE
+                    {robot.currentLocation === "docking" || robot.tripStatus === TRIP_STATUSES.DOCKING || robot.tripStatus === "idle"
                       ? "Docked"
                       : robot.tripStatus === TRIP_STATUSES.RETURNING
                         ? "Returning Home"

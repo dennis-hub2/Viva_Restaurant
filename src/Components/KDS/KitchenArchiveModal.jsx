@@ -12,70 +12,73 @@ function KitchenArchiveModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-90 flex items-center justify-center p-12 bg-gray-900/40 backdrop-blur-md animate-in fade-in cursor-pointer"
+      className="fixed inset-0 z-90 flex items-center justify-center p-3 sm:p-6 md:p-10 bg-gray-900/50 backdrop-blur-md animate-in fade-in cursor-pointer"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-6xl h-full max-h-[85vh] rounded-[48px] border-4 border-gray-200 shadow-[0_40px_100px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden cursor-default animate-in zoom-in-95"
+        className="bg-white w-full max-w-5xl h-full max-h-[88vh] rounded-3xl sm:rounded-[36px] border-2 sm:border-4 border-gray-200 shadow-2xl flex flex-col overflow-hidden cursor-default animate-in zoom-in-95 select-none"
       >
-        <div className="p-10 border-b-4 border-gray-100 flex justify-between items-center bg-white">
+        <div className="p-4 sm:p-6 md:p-8 border-b-2 sm:border-b-4 border-gray-100 flex justify-between items-center bg-white">
           <div>
-            <p className="text-[10px] font-black tracking-[0.4em] text-gray-400 mb-2 uppercase">
-              Order Intelligence
+            <p className="text-[9px] sm:text-[10px] font-black tracking-[0.3em] text-gray-400 mb-1 uppercase">
+              Order Archive
             </p>
-            <h2 className="text-5xl font-black text-gray-900 tracking-tighter italic uppercase">
+            <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter italic uppercase">
               Kitchen <span className="text-gray-400">Archive</span>
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="w-20 h-20 bg-gray-100 border-4 border-gray-200 rounded-[28px] flex items-center justify-center hover:bg-gray-900 hover:text-white transition-all shadow-xl"
+            className="w-10 h-10 sm:w-14 sm:h-14 bg-gray-100 border-2 border-gray-200 rounded-2xl flex items-center justify-center hover:bg-gray-900 hover:text-white transition-all shadow-xs"
           >
-            <X size={32} />
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar bg-gray-50">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
             {completedList.map((item, idx) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedOrder(item)}
-                className="bg-white border-4 border-gray-200 rounded-3xl p-10 flex flex-col items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-8 shadow-xl cursor-pointer hover:border-gray-900 transition-all group relative overflow-hidden"
-                style={{ animationDelay: `${idx * 20}ms` }}
+                className="bg-white border-2 border-gray-200 rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center gap-3 animate-in fade-in shadow-xs cursor-pointer hover:border-gray-900 transition-all group"
+                style={{ animationDelay: `${idx * 15}ms` }}
               >
-                <div className="w-16 h-16 rounded-3xl bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-gray-900 group-hover:text-white transition-all shadow-inner">
-                  <Check size={28} strokeWidth={4} />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-gray-900 group-hover:text-white transition-all shadow-2xs">
+                  <Check size={20} strokeWidth={3} />
                 </div>
                 <div className="text-center">
-                  <p className="text-4xl font-black text-gray-900 mb-1 tracking-tighter italic">
+                  <p className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter italic">
                     #{item.id.slice(-4).toUpperCase()}
                   </p>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">
                     {item.displayTime}
                   </p>
                 </div>
               </div>
             ))}
+            {completedList.length === 0 && (
+              <div className="col-span-full p-10 text-center text-sm font-bold text-gray-400 italic">
+                No archived orders found
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="p-12 bg-white border-t-4 border-gray-100 flex justify-between items-center shadow-2xl">
-          <div className="flex gap-10">
-            <div className="text-left">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                Total Orders
-              </p>
-              <p className="text-5xl font-black text-gray-900 tabular-nums tracking-tighter">
-                {completedList.length}
-              </p>
-            </div>
+        <div className="p-4 sm:p-6 md:p-8 bg-white border-t-2 sm:border-t-4 border-gray-100 flex justify-between items-center shadow-xs">
+          <div className="text-left">
+            <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">
+              Total Completed
+            </p>
+            <p className="text-2xl sm:text-3xl font-black text-gray-900 tabular-nums tracking-tighter">
+              {completedList.length}
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="px-16 py-6 bg-gray-900 text-white font-black rounded-3xl text-xs tracking-[0.3em] uppercase hover:bg-emerald-600 transition-all shadow-2xl active:scale-95"
+            className="px-6 sm:px-10 py-3 sm:py-4 bg-gray-900 text-white font-black rounded-2xl text-xs tracking-widest uppercase hover:bg-emerald-600 transition-all shadow-md active:scale-95"
           >
-            BACK TO TERMINAL
+            Back To Terminal
           </button>
         </div>
       </div>

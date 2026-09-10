@@ -18,102 +18,95 @@ function OrderDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-90 flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in cursor-pointer"
+      className="fixed inset-0 z-90 flex items-center justify-center p-3 sm:p-6 bg-gray-900/60 backdrop-blur-md animate-in fade-in cursor-pointer"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-2xl h-full max-h-[90vh] rounded-3xl border-4 border-gray-200 shadow-[0_40px_120px_rgba(0,0,0,0.2)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 cursor-default"
+        className="bg-white w-full max-w-xl md:max-w-2xl h-full max-h-[92vh] rounded-3xl border-2 sm:border-4 border-gray-200 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 cursor-default"
       >
         {/* Modal Header */}
         <div
-          className={`p-10 flex justify-between items-start shrink-0 ${order.type?.toLowerCase() === "dine in"
-              ? "bg-emerald-50"
-              : "bg-orange-50"
-            }`}
+          className={`p-4 sm:p-6 md:p-8 flex justify-between items-start shrink-0 border-b border-gray-100 ${
+            order.type?.toLowerCase() === "dine in" ? "bg-emerald-50/70" : "bg-orange-50/70"
+          }`}
         >
           <div>
-            <p className="text-[10px] font-black tracking-[0.4em] text-gray-400 mb-2 uppercase">
-              Ticket Intelligence
+            <p className="text-[9px] sm:text-[10px] font-black tracking-[0.3em] text-gray-500 mb-1 uppercase">
+              Ticket Details
             </p>
-            <h2 className="text-6xl font-black text-gray-900 tracking-tighter italic">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 tracking-tighter italic">
               #{order.id.slice(-4).toUpperCase()}
             </h2>
+            {order.table && (
+              <span className="text-xs font-black text-gray-600 uppercase tracking-widest block mt-1">
+                Table {order.table}
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
-            className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center hover:bg-gray-100 transition-all shadow-lg border-2 border-gray-100"
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center hover:bg-gray-100 transition shadow-sm border border-gray-200 shrink-0"
           >
-            <X size={28} className="text-gray-400" />
+            <X size={20} className="text-gray-500" />
           </button>
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 min-h-0 p-12 space-y-10 overflow-y-auto custom-scrollbar bg-white">
-          <div className="flex items-center gap-8">
+        <div className="flex-1 min-h-0 p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8 overflow-y-auto custom-scrollbar bg-white">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
             <span
-              className={`px-6 py-2.5 rounded-2xl text-[11px] font-black tracking-[0.2em] border-2 ${order.type?.toLowerCase() === "dine in"
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                  : "bg-orange-50 text-orange-600 border-orange-100"
-                }`}
+              className={`px-4 py-1.5 rounded-xl text-[10px] sm:text-xs font-black tracking-wider border ${
+                order.type?.toLowerCase() === "dine in"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : "bg-orange-50 text-orange-700 border-orange-200"
+              }`}
             >
               {order.type?.toUpperCase() || "ORDER"}
             </span>
-            <span className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-3">
-              <Clock size={20} className="text-gray-900" />
-              Time Elapsed:{" "}
+            <span className="text-xs font-black text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <Clock size={16} className="text-gray-700" />
+              Elapsed:{" "}
               {Math.floor(
                 (currentTime -
                   ((order.statusUpdatedAt || order.createdAt) instanceof Timestamp
                     ? (order.statusUpdatedAt || order.createdAt).toDate()
-                    : new Date(
-                      order.statusUpdatedAt ||
-                      order.createdAt ||
-                      Date.now(),
-                    ))) /
-                60000,
+                    : new Date(order.statusUpdatedAt || order.createdAt || Date.now()))) /
+                  60000
               )}
               m
             </span>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {order.items && order.items.length > 0 ? (
               order.items.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-8 bg-gray-50 p-8 rounded-[40px] border-2 border-gray-100 shadow-sm group transition-all hover:border-gray-900"
+                  className="flex items-start gap-4 sm:gap-6 bg-gray-50 p-4 sm:p-6 rounded-3xl border border-gray-200 shadow-xs group"
                 >
-                  <div className="w-20 h-20 bg-white border-2 border-gray-200 rounded-3xl flex items-center justify-center font-black text-4xl text-gray-900 shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                    {item.qty}
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white border border-gray-300 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl text-gray-900 shrink-0 shadow-xs">
+                    {item.qty || item.quantity || 1}
                   </div>
-                  <div className="flex-1 pt-2">
-                    <p className="text-3xl font-black text-gray-900 leading-tight uppercase tracking-tight italic">
-                      {item.name}
+                  <div className="flex-1 min-w-0 pt-1">
+                    <p className="text-lg sm:text-2xl font-black text-gray-900 leading-tight uppercase tracking-tight italic">
+                      {item.name || item.itemName || "Item"}
                     </p>
 
-                    {(item.note ||
-                      item.mod ||
-                      item.sub ||
-                      item.modifier) && (
-                        <div className="mt-4 flex flex-wrap gap-3">
-                          {(item.note || item.mod || item.modifier) && (
-                            <div className="inline-flex items-center gap-3 px-5 py-2 bg-white border-2 border-gray-200 rounded-2xl text-[11px] font-black text-gray-900 uppercase tracking-widest shadow-sm">
-                              <Flame size={16} className="text-orange-500" />{" "}
-                              {item.note || item.mod || item.modifier}
-                            </div>
-                          )}
+                    {(item.note || item.mod || item.sub || item.modifier) && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-800 uppercase tracking-wider shadow-2xs">
+                          <Flame size={12} className="text-orange-500" />{" "}
+                          {item.note || item.mod || item.modifier}
                         </div>
-                      )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-20 text-center border-4 border-dashed border-gray-100 rounded-[64px] opacity-30">
-                <Utensils
-                  size={80}
-                  className="mx-auto mb-8 text-gray-200"
-                />
-                <p className="text-2xl font-black uppercase tracking-[0.3em] text-gray-300">
+              <div className="p-10 text-center border-2 border-dashed border-gray-200 rounded-3xl opacity-40">
+                <Utensils size={48} className="mx-auto mb-4 text-gray-300" />
+                <p className="text-base font-black uppercase tracking-widest text-gray-400">
                   Ticket Empty
                 </p>
               </div>
@@ -122,36 +115,36 @@ function OrderDetailModal({
         </div>
 
         {/* Modal Actions */}
-        <div className="p-12 bg-white border-t-4 border-gray-100 grid grid-cols-1 gap-6 shadow-[0_-20px_50px_rgba(0,0,0,0.02)] shrink-0">
+        <div className="p-4 sm:p-6 md:p-8 bg-white border-t border-gray-200 shrink-0">
           {order.status === "new" ? (
             <button
               onClick={() => handleUpdateStatus(order.id, "progress")}
-              className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-7 rounded-3xl text-sm tracking-[0.5em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+              className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-4 sm:py-5 rounded-2xl text-xs sm:text-sm tracking-[0.3em] transition-all shadow-lg active:scale-98 flex items-center justify-center gap-3 uppercase"
             >
-              Start Prep <ChevronRight size={24} strokeWidth={4} />
+              Start Prep <ChevronRight size={20} strokeWidth={3} />
             </button>
           ) : order.status === "progress" ? (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <button
                 onClick={() => handleUpdateStatus(order.id, "new")}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-black py-7 rounded-3xl text-xs tracking-[0.2em] transition-all border-2 border-gray-200 uppercase"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-black py-4 sm:py-5 rounded-2xl text-xs tracking-wider transition-all border border-gray-200 uppercase"
               >
                 Reset Ticket
               </button>
               <button
                 onClick={() => handleUpdateStatus(order.id, "ready")}
-                className="bg-orange-500 hover:bg-gray-900 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                className="bg-orange-500 hover:bg-orange-600 text-white font-black py-4 sm:py-5 rounded-2xl text-xs sm:text-sm tracking-wider transition-all shadow-lg active:scale-98 flex items-center justify-center gap-2 uppercase"
               >
-                Mark Ready <Flame size={24} strokeWidth={4} />
+                Mark Ready <Flame size={18} strokeWidth={3} />
               </button>
             </div>
           ) : order.status === "ready" ? (
-            <div className="flex flex-col gap-6">
-              <div className="bg-blue-50 border-2 border-blue-100 p-6 rounded-3xl text-center shadow-inner">
-                <p className="text-[11px] font-black text-blue-600 uppercase tracking-[0.5em] mb-2">
+            <div className="flex flex-col gap-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">
                   Unit Deployment
                 </p>
-                <p className="text-gray-900 font-black text-2xl tracking-tighter italic">
+                <p className="text-gray-900 font-black text-lg sm:text-xl tracking-tight italic">
                   {order.assignedRobot
                     ? `Robot ${order.assignedRobot.toUpperCase()} Assigned & En Route`
                     : "Ready - Select Unit for Dispatch"}
@@ -159,14 +152,14 @@ function OrderDetailModal({
               </div>
 
               {/* Robot Selector */}
-              <div className="bg-gray-50 border-2 border-gray-200 p-4 rounded-2xl flex items-center justify-between gap-4">
+              <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex items-center justify-between gap-3">
                 <label className="text-xs font-black uppercase text-gray-700 tracking-wider">
                   Select Robot:
                 </label>
                 <select
                   value={selectedBot}
                   onChange={(e) => setSelectedBot(e.target.value)}
-                  className="bg-white border-2 border-gray-300 font-black text-sm text-gray-900 px-4 py-2 rounded-xl outline-none focus:border-blue-600"
+                  className="bg-white border border-gray-300 font-black text-xs sm:text-sm text-gray-900 px-3 py-1.5 rounded-lg outline-none focus:border-blue-600"
                 >
                   <option value="swagbot1">Swagbot 1 (Idle / Docked)</option>
                 </select>
@@ -174,32 +167,32 @@ function OrderDetailModal({
 
               <button
                 onClick={() => handleAssignRobotNow(selectedBot)}
-                className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-6 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 sm:py-5 rounded-2xl text-xs sm:text-sm tracking-widest transition-all shadow-lg active:scale-98 flex items-center justify-center gap-3 uppercase"
               >
-                Dispatch {selectedBot.toUpperCase()} Now <ChevronRight size={24} strokeWidth={4} />
+                Dispatch {selectedBot.toUpperCase()} Now <ChevronRight size={20} strokeWidth={3} />
               </button>
             </div>
           ) : order.status === "completed" && !order.assignedRobot ? (
-            <div className="flex flex-col gap-8">
-              <div className="bg-amber-50 border-2 border-amber-100 p-8 rounded-3xl text-center shadow-inner">
-                <p className="text-[11px] font-black text-amber-600 uppercase tracking-[0.5em] mb-3">
+            <div className="flex flex-col gap-3">
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">
                   Dispatch Missing
                 </p>
-                <p className="text-gray-900 font-black text-2xl tracking-tighter italic">
+                <p className="text-gray-900 font-black text-lg tracking-tight italic">
                   This order was completed before robot assignment.
                 </p>
               </div>
               <button
-                onClick={handleAssignRobotNow}
-                className="w-full bg-emerald-600 hover:bg-gray-900 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                onClick={() => handleAssignRobotNow(selectedBot)}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl text-xs tracking-widest transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 uppercase"
               >
                 Assign Bot Now
               </button>
               <button
                 onClick={() => handleUpdateStatus(order.id, "completed")}
-                className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-7 rounded-3xl text-sm tracking-[0.3em] transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-5 uppercase"
+                className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl text-xs tracking-widest transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 uppercase"
               >
-                Confirm Delivery <Check size={24} strokeWidth={4} />
+                Confirm Delivery <Check size={18} strokeWidth={3} />
               </button>
             </div>
           ) : null}

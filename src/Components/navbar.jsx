@@ -8,7 +8,6 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
   const navLinks = [
     { name: "Home", href: "#" },
     { name: "Menu", href: "#menu" },
-    { name: "Contact", href: "#contact" },
   ];
 
   return (

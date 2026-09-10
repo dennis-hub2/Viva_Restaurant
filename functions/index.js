@@ -21,7 +21,7 @@ function buildIdleRobotState() {
     home: false,
     move: false,
     route: [],
-    trip_status: "idle",
+    trip_status: "docking",
     table1: tableState(),
     table2: tableState(),
     table3: tableState(),
@@ -51,8 +51,8 @@ function normalizeRouteValue(route) {
     ? route
     : route && typeof route === "object"
       ? Object.entries(route)
-          .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
-          .map(([, value]) => value)
+        .sort(([leftKey], [rightKey]) => Number(leftKey) - Number(rightKey))
+        .map(([, value]) => value)
       : [];
 
   return sortRoute(
@@ -63,11 +63,10 @@ function normalizeRouteValue(route) {
 }
 
 function canStartTrip(robot = {}) {
-  const route = normalizeRouteValue(robot.route);
+  const status = robot.trip_status || "docking";
   return (
     robot.move !== true &&
-    (robot.trip_status || "idle") === "idle" &&
-    route.length === 0 &&
+    (status === "docking" || status === "idle") &&
     robot.home !== true
   );
 }
@@ -84,11 +83,11 @@ function buildTripState(currentRobot = {}, route = []) {
   for (const tableName of TABLES) {
     nextRobot[tableName] = route.includes(tableName)
       ? {
-          mission: "destination",
-          status: false,
-          arrived: false,
-          confirmed: false,
-        }
+        mission: "destination",
+        status: false,
+        arrived: false,
+        confirmed: false,
+      }
       : tableState();
   }
 
@@ -157,32 +156,17 @@ async function dispatchReadyOrdersIfPossible() {
   return null;
 }
 
+// Note: Auto-dispatch triggers disabled. Robot delivery assignment is strictly manual from KDS.
 exports.syncReadyOrders = functions.firestore
   .document("orders/{orderId}")
-  .onWrite(async (change) => {
-    if (!change.after.exists) return null;
-
-    const beforeData = change.before.exists ? change.before.data() : null;
-    const afterData = change.after.data();
-    const justBecameReady =
-      afterData.status === "ready" && beforeData?.status !== "ready";
-
-    if (!justBecameReady || !getOrderTableName(afterData)) {
-      return null;
-    }
-
-    return dispatchReadyOrdersIfPossible();
+  .onWrite(async () => {
+    // Manual dispatch mode enabled: Kitchen staff explicitly assigns robot from KDS.
+    return null;
   });
 
 exports.dispatchQueuedOrdersWhenRobotIdle = functions.database
   .ref(`${ROBOT_ID}/trip_status`)
-  .onWrite(async (change) => {
-    const beforeStatus = change.before.val();
-    const afterStatus = change.after.val();
-
-    if (afterStatus !== "idle" || beforeStatus === "idle") {
-      return null;
-    }
-
-    return dispatchReadyOrdersIfPossible();
+  .onWrite(async () => {
+    // Manual dispatch mode enabled: Robot waits at dock until assigned from KDS.
+    return null;
   });

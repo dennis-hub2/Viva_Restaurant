@@ -44,7 +44,7 @@ function buildIdleRobotState() {
     home: false,
     move: false,
     route: [],
-    trip_status: "idle",
+    trip_status: "docking",
     table1: tableState(),
     table2: tableState(),
     table3: tableState(),
@@ -99,11 +99,10 @@ function normalizeRouteValue(route) {
 }
 
 function canStartTrip(robot = {}) {
-  const route = normalizeRouteValue(robot.route);
+  const status = robot.trip_status || "docking";
   return (
     robot.move !== true &&
-    (robot.trip_status || "idle") === "idle" &&
-    route.length === 0 &&
+    (status === "docking" || status === "idle") &&
     robot.home !== true
   );
 }
@@ -118,13 +117,6 @@ function buildTripState(route = [], targets = []) {
     if (targets.includes(tableName)) {
       nextRobot[tableName] = {
         mission: "destination",
-        status: false,
-        arrived: false,
-        confirmed: false,
-      };
-    } else if (route.includes(tableName)) {
-      nextRobot[tableName] = {
-        mission: "pass_through",
         status: false,
         arrived: false,
         confirmed: false,

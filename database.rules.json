@@ -1,59 +1,79 @@
 {
   "rules": {
-    ".read": true,
+    ".read": false,
+    ".write": false,
     "swagbot1": {
       ".read": true,
-      ".write": "auth != null",
-      "route": {
-        ".write": "auth.token.role === 'backend' || auth != null",
-        ".validate": "newData.val() === null || (!newData.isString() && !newData.isNumber() && !newData.isBoolean())",
-        "$index": {
-          ".validate": "$index.matches(/^[0-3]$/) && newData.val().matches(/^table[1-4]$/)"
-        }
+      ".write": true,
+      "current_location": {
+        ".validate": "newData.isString() && (newData.val() === 'docking' || newData.val() === 'table1' || newData.val() === 'table2' || newData.val() === 'table3' || newData.val() === 'table4')"
+      },
+      "home": {
+        ".validate": "newData.isBoolean()"
       },
       "move": {
-        ".write": "auth.token.role === 'backend' || auth != null",
         ".validate": "newData.isBoolean()"
       },
       "trip_status": {
-        ".write": "auth.token.role === 'robot' || auth.token.role === 'waiter' || auth.token.role === 'backend' || auth != null",
-        ".validate": "newData.val() === 'en_route' || newData.val() === 'waiting_confirmation' || newData.val() === 'awaiting_return' || newData.val() === 'returning' || newData.val() === 'idle'"
-      },
-      "current_location": {
-        ".write": "auth.token.role === 'robot' || auth != null",
-        ".validate": "newData.isString() && (newData.val() === 'docking' || newData.val().matches(/^table[1-4]$/))"
-      },
-      "home": {
-        ".write": "auth.token.role === 'waiter' || auth.token.role === 'robot' || auth != null",
-        ".validate": "newData.isBoolean()"
+        ".validate": "newData.isString() && (newData.val() === 'docking' || newData.val() === 'en_route' || newData.val() === 'arrived' || newData.val() === 'returning')"
       },
       "table1": {
-        "$field": {
-          ".write": "((auth.token.role === 'backend' || auth != null) && (($field === 'mission' || $field === 'status'))) || ((auth.token.role === 'robot' || auth != null) && ($field === 'arrived')) || ((auth.token.role === 'waiter' || auth != null) && (($field === 'confirmed' || $field === 'status')))",
-          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination' || newData.val() === 'pass_through')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        "arrived": {
+          ".validate": "newData.isBoolean()"
+        },
+        "confirmed": {
+          ".validate": "newData.isBoolean()"
+        },
+        "mission": {
+          ".validate": "newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')"
+        },
+        "status": {
+          ".validate": "newData.isBoolean()"
         }
       },
       "table2": {
-        "$field": {
-          ".write": "((auth.token.role === 'backend' || auth != null) && (($field === 'mission' || $field === 'status'))) || ((auth.token.role === 'robot' || auth != null) && ($field === 'arrived')) || ((auth.token.role === 'waiter' || auth != null) && (($field === 'confirmed' || $field === 'status')))",
-          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination' || newData.val() === 'pass_through')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        "arrived": {
+          ".validate": "newData.isBoolean()"
+        },
+        "confirmed": {
+          ".validate": "newData.isBoolean()"
+        },
+        "mission": {
+          ".validate": "newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')"
+        },
+        "status": {
+          ".validate": "newData.isBoolean()"
         }
       },
       "table3": {
-        "$field": {
-          ".write": "((auth.token.role === 'backend' || auth != null) && (($field === 'mission' || $field === 'status'))) || ((auth.token.role === 'robot' || auth != null) && ($field === 'arrived')) || ((auth.token.role === 'waiter' || auth != null) && (($field === 'confirmed' || $field === 'status')))",
-          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination' || newData.val() === 'pass_through')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        "arrived": {
+          ".validate": "newData.isBoolean()"
+        },
+        "confirmed": {
+          ".validate": "newData.isBoolean()"
+        },
+        "mission": {
+          ".validate": "newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')"
+        },
+        "status": {
+          ".validate": "newData.isBoolean()"
         }
       },
       "table4": {
-        "$field": {
-          ".write": "((auth.token.role === 'backend' || auth != null) && (($field === 'mission' || $field === 'status'))) || ((auth.token.role === 'robot' || auth != null) && ($field === 'arrived')) || ((auth.token.role === 'waiter' || auth != null) && (($field === 'confirmed' || $field === 'status')))",
-          ".validate": "($field === 'mission' && newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination' || newData.val() === 'pass_through')) || (($field === 'status' || $field === 'arrived' || $field === 'confirmed') && newData.isBoolean())"
+        "arrived": {
+          ".validate": "newData.isBoolean()"
+        },
+        "confirmed": {
+          ".validate": "newData.isBoolean()"
+        },
+        "mission": {
+          ".validate": "newData.isString() && (newData.val() === 'idle' || newData.val() === 'destination')"
+        },
+        "status": {
+          ".validate": "newData.isBoolean()"
         }
-      },
-      "$other": {
-        ".validate": false
       }
     }
   }
 }
+

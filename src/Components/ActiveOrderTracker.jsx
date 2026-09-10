@@ -41,14 +41,14 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
     return () => unsubscribe();
   }, [activeOrder]);
 
-  // Auto-clear active order from memory 10 seconds after it is completed
+  // Auto-clear active order from memory 15 seconds ONLY AFTER it is marked completed (delivered)
   useEffect(() => {
     if (activeOrder?.status === "completed") {
       const timer = setTimeout(() => {
         localStorage.removeItem("active_order_id");
         localStorage.removeItem("customer_table_number");
         setActiveOrderId(null);
-      }, 10000);
+      }, 15000);
       return () => clearTimeout(timer);
     }
   }, [activeOrder, setActiveOrderId]);
@@ -82,7 +82,7 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
       const isArrived =
         tableState?.arrived === true ||
         (robotState?.current_location === tableKey &&
-          robotState?.trip_status === "waiting_confirmation");
+          (robotState?.trip_status === "arrived" || robotState?.trip_status === "waiting_confirmation"));
 
       // Confirmation is ONLY valid if the robot actually arrived at the table during this trip
       const isConfirmed = tableState?.confirmed === true && isArrived;
@@ -137,6 +137,7 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
   if (!activeOrder) return null;
 
   const progressInfo = getOrderProgressInfo();
+  const isCompleted = activeOrder.status === "completed";
 
   return (
     <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 bg-[#2B231E]/95 text-white p-5 rounded-3xl shadow-[0_24px_50px_rgba(0,0,0,0.35)] border border-white/10 z-90 backdrop-blur-md">
@@ -145,17 +146,23 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
           <p className="text-[10px] font-black uppercase tracking-wider text-cyan-400">Live Order Tracker</p>
           <h4 className="font-bold text-sm text-[#F7E7CE]">Table {activeOrder.table} &bull; Order #{activeOrder.id?.slice(-4)}</h4>
         </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem("active_order_id");
-            localStorage.removeItem("customer_table_number");
-            setActiveOrderId(null);
-          }}
-          className="text-xs text-slate-400 hover:text-white transition"
-          title="Close Tracker"
-        >
-          ✕
-        </button>
+        {isCompleted ? (
+          <button
+            onClick={() => {
+              localStorage.removeItem("active_order_id");
+              localStorage.removeItem("customer_table_number");
+              setActiveOrderId(null);
+            }}
+            className="text-[10px] font-black uppercase tracking-wider text-slate-300 hover:text-white transition px-2.5 py-1 bg-white/10 rounded-lg border border-white/10"
+            title="Dismiss Tracker"
+          >
+            ✕ Dismiss
+          </button>
+        ) : (
+          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
+            Active Order
+          </span>
+        )}
       </div>
 
       <div className="mb-4">

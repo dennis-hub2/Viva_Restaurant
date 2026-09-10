@@ -14,26 +14,25 @@ import OrderHistory from "./tabs/OrderHistory";
 
 export default function AdminDashboard() {
   const [outOfStockItems, setOutOfStockItems] = useState([]);
-  // 1. UPDATED: Lazy initialization checks localStorage first
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem("adminActiveTab");
     return savedTab ? savedTab : "Overview";
   });
 
-  // 2. NEW: Save the active tab to localStorage every time it changes
   useEffect(() => {
     localStorage.setItem("adminActiveTab", activeTab);
   }, [activeTab]);
 
-  // Global listener for out of stock items
   useEffect(() => {
     const menuRef = collection(db, "menuItems");
     const q = query(menuRef, where("stock", "<", 1));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const lowStock = snapshot.docs.map(doc => ({
+      const lowStock = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
       setOutOfStockItems(lowStock);
     });
@@ -41,7 +40,6 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, []);
 
-  // This maps the Sidebar button clicks to your actual files
   const renderContent = () => {
     switch (activeTab) {
       case "Overview":
@@ -74,21 +72,29 @@ export default function AdminDashboard() {
                 <span className="text-xl">⚠️</span>
               </div>
               <div>
-                <p className="font-black text-xs uppercase tracking-widest leading-none mb-1">Stock Alert</p>
-                <p className="text-[10px] font-bold opacity-90">{outOfStockItems.length} items are currently unavailable</p>
+                <p className="font-black text-xs uppercase tracking-widest leading-none mb-1">
+                  Stock Alert
+                </p>
+                <p className="text-[10px] font-bold opacity-90">
+                  {outOfStockItems.length} items are currently unavailable
+                </p>
               </div>
             </div>
-            
+
             <div className="max-h-[150px] overflow-y-auto custom-scrollbar bg-black/20 rounded-xl p-3 mt-1 space-y-2">
-              {outOfStockItems.map(item => (
+              {outOfStockItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-tight truncate pr-2">{item.name}</span>
-                  <span className="bg-red-500 text-[9px] font-black px-2 py-0.5 rounded border border-white/20 shrink-0">OUT OF STOCK</span>
+                  <span className="text-[10px] font-black uppercase tracking-tight truncate pr-2">
+                    {item.name}
+                  </span>
+                  <span className="bg-red-500 text-[9px] font-black px-2 py-0.5 rounded border border-white/20 shrink-0">
+                    OUT OF STOCK
+                  </span>
                 </div>
               ))}
             </div>
 
-            <button 
+            <button
               onClick={() => setActiveTab("Inventory")}
               className="mt-2 w-full bg-white text-red-600 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition-colors shadow-lg"
             >
@@ -98,13 +104,24 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Mobile Header with Tab Selector */}
-      <div className="md:hidden bg-white border-b-4 border-gray-200 p-4 flex justify-between items-center shadow-lg z-20">
-        <h1 className="text-xl font-black tracking-tighter italic text-gray-900 uppercase">Viva Admin</h1>
-        <select 
+      {/* Mobile Topbar */}
+      <div className="md:hidden bg-white border-b-4 border-gray-200 px-4 py-3 flex justify-between items-center shadow-md z-30 shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 rounded-xl bg-gray-900 text-white font-black text-xs uppercase tracking-wider flex items-center gap-1.5 active:scale-95 transition"
+          >
+            <span>☰</span> Menu
+          </button>
+          <h1 className="text-lg font-black tracking-tighter italic text-gray-900 uppercase">
+            Viva Admin
+          </h1>
+        </div>
+
+        <select
           value={activeTab}
           onChange={(e) => setActiveTab(e.target.value)}
-          className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border-none outline-none ring-4 ring-gray-100 shadow-md"
+          className="bg-gray-100 text-gray-900 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider border-2 border-gray-200 outline-none"
         >
           <option value="Overview">Overview</option>
           <option value="Menu Management">Menu Management</option>
@@ -116,10 +133,15 @@ export default function AdminDashboard() {
         </select>
       </div>
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
 
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">{renderContent()}</div>
+        <div className="p-4 sm:p-6 md:p-10 max-w-7xl mx-auto w-full">{renderContent()}</div>
       </main>
     </div>
   );

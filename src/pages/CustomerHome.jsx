@@ -5,7 +5,6 @@ import DecorativeSection from "../Components/DecorativeSection";
 import CategoryTabs from "../Components/CategoryTabs";
 import MenuCard from "../Components/MenuCard";
 import CartDrawer from "../Components/CartDrawer";
-import ContactSection from "../Components/ContactSection";
 import ActiveOrderTracker from "../Components/ActiveOrderTracker";
 
 // 1. NEW: Firebase imports (We deleted the local menuData import!)
@@ -234,8 +233,6 @@ const CustomerHome = () => {
             </div>
           )}
         </section>
-
-        <ContactSection />
       </div>
 
       <CartDrawer

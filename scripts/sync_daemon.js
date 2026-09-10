@@ -105,7 +105,7 @@ function buildIdleRobotState() {
     home: false,
     move: false,
     route: [],
-    trip_status: "idle",
+    trip_status: "docking",
     table1: tableState(),
     table2: tableState(),
     table3: tableState(),
@@ -160,11 +160,10 @@ function normalizeRouteValue(route) {
 }
 
 function canStartTrip(robot = {}) {
-  const route = normalizeRouteValue(robot.route);
+  const status = robot.trip_status || "docking";
   return (
     robot.move !== true &&
-    (robot.trip_status || "idle") === "idle" &&
-    route.length === 0 &&
+    (status === "docking" || status === "idle") &&
     robot.home !== true
   );
 }
@@ -182,13 +181,6 @@ function buildTripState(currentRobot = {}, route = [], targets = []) {
     if (targets.includes(tableName)) {
       nextRobot[tableName] = {
         mission: "destination",
-        status: false,
-        arrived: false,
-        confirmed: false,
-      };
-    } else if (route.includes(tableName)) {
-      nextRobot[tableName] = {
-        mission: "pass_through",
         status: false,
         arrived: false,
         confirmed: false,
@@ -286,35 +278,8 @@ async function dispatchReadyOrdersIfPossible() {
 
 console.log("\n[Daemon] Starting listeners...");
 
-// Listener 1: Firestore Orders changes
-firestore.collection("orders").where("status", "==", "ready").onSnapshot(
-  async (snapshot) => {
-    // Only trigger if we actually got changes
-    if (!snapshot.empty) {
-      console.log(`[Listener] Firestore: ${snapshot.size} orders are 'ready'. Checking dispatch...`);
-      await dispatchReadyOrdersIfPossible();
-    }
-  },
-  (error) => {
-    console.error("[Listener Error] Firestore ready orders listener failed:", error);
-  }
-);
-
-// Listener 2: RTDB Robot trip_status changes
-rtdb.ref(`${ROBOT_ID}/trip_status`).on(
-  "value",
-  async (snapshot) => {
-    const status = snapshot.val();
-    console.log(`[Listener] RTDB: Robot ${ROBOT_ID} trip_status is '${status}'`);
-    if (status === "idle") {
-      console.log(`[Listener] RTDB: Robot ${ROBOT_ID} returned to 'idle'. Checking for queued orders...`);
-      await dispatchReadyOrdersIfPossible();
-    }
-  },
-  (error) => {
-    console.error("[Listener Error] RTDB robot status listener failed:", error);
-  }
-);
+// Note: Auto-dispatch listeners disabled. Robot assignment is strictly manual from KDS UI.
+console.log("[Daemon] Running in Manual Dispatch Mode (table confirmation sync only).");
 
 // Listener 3: RTDB Table confirmations (marks Firestore orders as completed)
 TABLES.forEach((tableName) => {

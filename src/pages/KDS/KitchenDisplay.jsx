@@ -239,7 +239,7 @@ export default function KitchenDisplay() {
           o.id.includes(searchQuery),
         );
         return (
-          <div className="flex-1 p-8 grid grid-cols-2 lg:grid-cols-4 auto-rows-max content-start gap-8 overflow-y-auto custom-scrollbar bg-gray-100 min-h-0">
+          <div className="flex-1 p-4 sm:p-6 lg:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 auto-rows-max content-start gap-4 sm:gap-6 overflow-y-auto custom-scrollbar bg-gray-100 min-h-0">
             {filteredCompleted.map((order) => (
               <OrderCard
                 key={order.id}
@@ -264,7 +264,7 @@ export default function KitchenDisplay() {
     }
 
     return (
-      <div className="flex-1 p-8 grid grid-cols-2 lg:grid-cols-4 auto-rows-max content-start gap-8 overflow-y-auto custom-scrollbar bg-gray-100 min-h-0">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 auto-rows-max content-start gap-4 sm:gap-6 overflow-y-auto custom-scrollbar bg-gray-100 min-h-0">
         {displayOrders.map((order) => (
           <OrderCard
             key={order.id}

@@ -3,10 +3,12 @@ export const ROBOT_ID = "swagbot1";
 export const TABLES = ["table1", "table2", "table3", "table4"];
 
 export const TRIP_STATUSES = {
-  IDLE: "idle",
+  IDLE: "docking",
+  DOCKING: "docking",
   EN_ROUTE: "en_route",
-  WAITING_CONFIRMATION: "waiting_confirmation",
-  AWAITING_RETURN: "awaiting_return",
+  ARRIVED: "arrived",
+  WAITING_CONFIRMATION: "arrived",
+  AWAITING_RETURN: "arrived",
   RETURNING: "returning",
 };
 
@@ -25,7 +27,7 @@ export function buildIdleRobotState(overrides = {}) {
     home: false,
     move: false,
     route: [],
-    trip_status: TRIP_STATUSES.IDLE,
+    trip_status: TRIP_STATUSES.DOCKING,
     table1: buildEmptyTableState(),
     table2: buildEmptyTableState(),
     table3: buildEmptyTableState(),
@@ -66,19 +68,35 @@ export function normalizeRobot(robot = {}) {
     return result;
   }, {});
 
+  const rawStatus = robot.trip_status;
+  const tripStatus =
+    rawStatus === "idle" ? TRIP_STATUSES.DOCKING :
+    rawStatus === "waiting_confirmation" ? TRIP_STATUSES.ARRIVED :
+    rawStatus || TRIP_STATUSES.DOCKING;
+
   return {
     id: ROBOT_ID,
     currentLocation: robot.current_location || "docking",
     home: robot.home === true,
     move: robot.move === true,
     route,
-    tripStatus: robot.trip_status || TRIP_STATUSES.IDLE,
+    tripStatus,
     tables,
   };
 }
 
 export function getCurrentTable(robot) {
   return TABLES.includes(robot.currentLocation) ? robot.currentLocation : null;
+}
+
+export function getDestinationTable(robot) {
+  if (!robot || !robot.tables) return null;
+  for (const tableName of TABLES) {
+    if (robot.tables[tableName]?.mission === "destination") {
+      return tableName;
+    }
+  }
+  return null;
 }
 
 export function getTableLabel(tableName) {
