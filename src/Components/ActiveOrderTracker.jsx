@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { ref, onValue } from "firebase/database";
+import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { ref, onValue, update } from "firebase/database";
 import { db, rtdb } from "../firebase";
 
 const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
   const [activeOrder, setActiveOrder] = useState(null);
   const [robotState, setRobotState] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // Listen to the customer's active order in Firestore
   useEffect(() => {
@@ -53,6 +54,31 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
     }
   }, [activeOrder, setActiveOrderId]);
 
+  const handleConfirmDelivery = async () => {
+    if (!activeOrder) return;
+    const tableKey = `table${activeOrder.table}`;
+    const robotId = activeOrder.assignedRobot || "swagbot1";
+
+    try {
+      setIsConfirming(true);
+      await update(ref(rtdb, robotId), {
+        [`${tableKey}/confirmed`]: true,
+        [`${tableKey}/status`]: true,
+      });
+
+      const orderRef = doc(db, "orders", activeOrder.id);
+      await updateDoc(orderRef, {
+        status: "completed",
+        completedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Error confirming delivery:", err);
+      alert("Failed to confirm delivery. Please try again.");
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const getOrderProgressInfo = () => {
     if (!activeOrder) return { step: 0, title: "No active order", desc: "" };
 
@@ -78,14 +104,21 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
       const tableKey = `table${activeOrder.table}`;
       const tableState = robotState?.[tableKey];
 
-      // Safe arrival check
+      // Destination check: table mission is destination or destination flag is true
+      const isDestination =
+        tableState?.mission === "destination" ||
+        tableState?.destination === true;
+
+      // Safe arrival check using current location only to track movement
       const isArrived =
         tableState?.arrived === true ||
         (robotState?.current_location === tableKey &&
-          (robotState?.trip_status === "arrived" || robotState?.trip_status === "waiting_confirmation"));
+          (robotState?.trip_status === "arrived" ||
+            robotState?.trip_status === "waiting_confirmation" ||
+            isDestination));
 
-      // Confirmation is ONLY valid if the robot actually arrived at the table during this trip
-      const isConfirmed = tableState?.confirmed === true && isArrived;
+      // Confirmation is ONLY valid if confirmed flag is true or order completed
+      const isConfirmed = tableState?.confirmed === true || activeOrder.status === "completed";
 
       if (isConfirmed) {
         return {
@@ -96,12 +129,13 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
         };
       }
 
-      if (isArrived) {
+      if (isArrived || (robotState?.current_location === tableKey && isDestination)) {
         return {
           step: 4,
           title: "Robot Arrived! 🤖",
-          desc: "Swagbot1 is at your table! Please pick up your food.",
+          desc: "Swagbot1 is at your table! Please pick up your food and confirm delivery.",
           color: "text-emerald-400 font-bold animate-bounce",
+          canConfirm: true,
         };
       }
 
@@ -168,6 +202,15 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
       <div className="mb-4">
         <p className={`text-md font-black tracking-tight ${progressInfo.color}`}>{progressInfo.title}</p>
         <p className="text-xs text-slate-300 mt-1">{progressInfo.desc}</p>
+        {progressInfo.canConfirm && !isCompleted && (
+          <button
+            onClick={handleConfirmDelivery}
+            disabled={isConfirming}
+            className="mt-3 w-full py-2.5 px-4 bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 active:scale-98 transition transform cursor-pointer flex items-center justify-center gap-2"
+          >
+            {isConfirming ? "Confirming..." : "✓ Confirm Delivery"}
+          </button>
+        )}
       </div>
 
       {/* Mini Stepper */}
@@ -214,13 +257,13 @@ const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
           {activeOrder.items?.map((it, idx) => (
             <div key={idx} className="flex justify-between">
               <span>{it.qty}x {it.name}</span>
-              <span className="text-slate-400">${(it.price * it.qty).toFixed(2)}</span>
+              <span className="text-slate-400">₵{(it.price * it.qty).toFixed(2)}</span>
             </div>
           ))}
         </div>
         <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5 text-xs font-bold text-slate-200">
           <span>Total Paid</span>
-          <span className="text-emerald-400">${activeOrder.total?.toFixed(2)}</span>
+          <span className="text-emerald-400">₵{activeOrder.total?.toFixed(2)}</span>
         </div>
       </div>
     </div>

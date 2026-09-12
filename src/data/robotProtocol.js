@@ -55,6 +55,7 @@ export function normalizeRoute(route) {
 export function normalizeTableState(table = {}) {
   return {
     mission: table.mission || "idle",
+    destination: table.destination === true || table.mission === "destination",
     status: table.status === true,
     arrived: table.arrived === true,
     confirmed: table.confirmed === true,
@@ -62,17 +63,25 @@ export function normalizeTableState(table = {}) {
 }
 
 export function normalizeRobot(robot = {}) {
-  const route = normalizeRoute(robot.route);
+  const rawStatus = robot.trip_status;
+  const isReturningOrIdle =
+    rawStatus === "returning" ||
+    rawStatus === "idle" ||
+    rawStatus === "docking" ||
+    robot.home === true;
+
+  // Clear route when returning home or idle so past stops do not remain in tracker
+  const route = isReturningOrIdle ? [] : normalizeRoute(robot.route);
+
   const tables = TABLES.reduce((result, tableName) => {
     result[tableName] = normalizeTableState(robot[tableName]);
     return result;
   }, {});
 
-  const rawStatus = robot.trip_status;
   const tripStatus =
     rawStatus === "idle" ? TRIP_STATUSES.DOCKING :
-    rawStatus === "waiting_confirmation" ? TRIP_STATUSES.ARRIVED :
-    rawStatus || TRIP_STATUSES.DOCKING;
+      rawStatus === "waiting_confirmation" ? TRIP_STATUSES.ARRIVED :
+        rawStatus || TRIP_STATUSES.DOCKING;
 
   return {
     id: ROBOT_ID,

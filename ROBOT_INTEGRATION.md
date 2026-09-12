@@ -1,13 +1,14 @@
 # Viva Restaurant Robot Integration
 
-This project now uses one shared Realtime Database contract for a single delivery robot:
+This project uses one shared Realtime Database contract for a single delivery robot (`swagbot1`):
 
-- Backend dispatch logic: [functions/index.js](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/functions/index.js:1)
-- Waiter live tracker: [src/pages/Waiter/RobotTracker.jsx](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/src/pages/Waiter/RobotTracker.jsx:1)
-- Admin live ops view: [src/pages/Admin/tabs/Robots.jsx](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/src/pages/Admin/tabs/Robots.jsx:1)
-- Shared schema helpers: [src/data/robotProtocol.js](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/src/data/robotProtocol.js:1)
-- ESP32 robot firmware: [esp32_robot/esp32_robot.ino](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/esp32_robot/esp32_robot.ino:1)
-- RTDB rules: [database.rules.json](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/database.rules.json:1)
+- Backend dispatch logic: [`functions/index.js`](functions/index.js)
+- Waiter live tracker: [`src/pages/Waiter/RobotTracker.jsx`](src/pages/Waiter/RobotTracker.jsx)
+- Customer order tracker: [`src/Components/ActiveOrderTracker.jsx`](src/Components/ActiveOrderTracker.jsx)
+- Admin live ops view: [`src/pages/Admin/tabs/Robots.jsx`](src/pages/Admin/tabs/Robots.jsx)
+- Shared schema helpers: [`src/data/robotProtocol.js`](src/data/robotProtocol.js)
+- ESP32 robot firmware: [`esp32_robot/esp32_robot.ino`](esp32_robot/esp32_robot.ino)
+- RTDB rules: [`database.rules.json`](database.rules.json)
 
 ## Physical Layout
 
@@ -18,9 +19,9 @@ There is one robot, `swagbot1`, on a one-direction loop:
 Important behavior:
 
 - The robot may receive a route that contains only a subset of tables.
-- It must physically pass non-route tables without stopping.
+- It physically passes non-route tables without stopping.
 - It only stops at tables that are in `route` and not bypassed by `home: true`.
-- After the last confirmed delivery, it must stay in place until a waiter explicitly sends it home.
+- After delivery confirmation, it transitions to the next route stop or returns to docking station.
 
 ## Realtime Database Shape
 
@@ -64,210 +65,53 @@ The robot lives at the top-level RTDB path `swagbot1`.
 
 ## Trip Status Values
 
-- `idle`: robot is docked and available
-- `en_route`: robot is actively moving on the loop
-- `waiting_confirmation`: robot is stopped at a route table, waiting for waiter confirmation
-- `awaiting_return`: all route stops are finished and confirmed; robot is parked, waiting for send-home
-- `returning`: waiter has tapped send-home and robot should continue the loop back to docking
+- `idle` / `docking`: robot is docked and available at base.
+- `en_route`: robot is actively moving along the loop.
+- `waiting_confirmation` / `arrived`: robot is stopped at a destination table, waiting for delivery confirmation.
+- `awaiting_return`: all route stops are finished and confirmed; robot is parked, waiting for send-home.
+- `returning`: robot is on the way back to the docking station.
 
 ## Write Ownership
 
-These ownership boundaries are intentional and should stay strict:
+These ownership boundaries keep system interactions clean:
 
-- Backend writes only:
+- **Backend writes only**:
   - `route`
   - `move`
-  - `trip_status` only when starting a trip as `"en_route"`
-  - each destination table's `mission` and initial `status`
-- Robot writes only:
-  - `current_location`
-  - each table's `arrived`
-  - `trip_status` transitions caused by movement:
-    - `"waiting_confirmation"`
-    - `"en_route"` after waiter confirmation
-    - `"awaiting_return"`
-    - `"idle"` after docking reset
-- Waiter app writes only:
-  - each table's `confirmed`
-  - each table's `status` when confirming delivery
-  - `home`
-  - `trip_status` only as `"returning"`
+  - `trip_status` (when initializing trip as `"en_route"`)
+  - Destination table's initial `mission: "destination"`
+- **Robot writes only**:
+  - `current_location` (telemetry as robot crosses IR markers)
+  - Table `arrived` flag
+  - `trip_status` transitions caused by physical movement (`"arrived"`, `"returning"`, `"docking"`)
+- **Customer / Waiter app writes**:
+  - Table `confirmed: true` and `status: true` when confirming delivery
+  - `home: true` (when waiter triggers return)
+  - Firestore order status `completed`
 
-Important note:
+## Delivery Confirmation & Route Reset Flow
 
-- RTDB rules can only enforce this if the waiter app and robot use authenticated non-admin clients.
-- Do not use a Realtime Database secret or admin SDK from the robot if you want rules enforcement.
+1. **Customer / Waiter Confirmation**:
+   - Both the customer live tracker ([`ActiveOrderTracker.jsx`](src/Components/ActiveOrderTracker.jsx)) and waiter console ([`RobotTracker.jsx`](src/pages/Waiter/RobotTracker.jsx)) track the robot's real-time position using `current_location` exclusively.
+   - When the robot reaches the target table (`destination` / `arrived` set to `true` at `current_location`), a **Confirm Delivery** action is displayed.
+   - Triggering confirmation writes `swagbot1/tableX/confirmed = true` and updates the corresponding Firestore order status to `completed`.
 
-## Backend Flow
+2. **Route Clearing on Return**:
+   - As soon as the robot finishes deliveries and transitions to `"returning"`, `"idle"`, or `"docking"` (or `home === true`), the route array is automatically cleared to `[]` in [`robotProtocol.js`](src/data/robotProtocol.js).
+   - This ensures past completed route stops are removed from tracking timelines while returning home.
 
-The Cloud Functions backend listens for Firestore orders becoming `ready`.
+3. **Docking Reset Behavior**:
+   - When the robot arrives back at docking (`current_location: "docking"`):
+     - Each route table is reset to `mission: "idle"`, `arrived: false`, `confirmed: false`, `status: false`.
+     - Top-level `route` is cleared (`null`/`[]`), `move` set to `false`, `home` set to `false`, and `trip_status` set to `"docking"`.
 
-When dispatching:
+## ESP32 Firebase Configuration
 
-1. Collect all unassigned ready orders with valid table targets.
-2. Convert them into a unique route in physical order:
-   - `table1`, `table2`, `table3`, `table4`
-3. Start the trip only if `swagbot1` is truly idle.
-4. Write:
-   - `route: ["table1", "table3"]` or similar
-   - `move: true`
-   - `trip_status: "en_route"`
-   - for each route table:
-     - `mission: "destination"`
-     - `status: false`
-     - `arrived: false`
-     - `confirmed: false`
-
-The current backend also retries dispatch when the robot returns to `idle`, so ready orders that arrived while the robot was busy can start automatically on the next trip.
-
-## Robot Flow
-
-The ESP32 firmware listens in real time to:
-
-- `swagbot1/route`
-- `swagbot1/home`
-- `swagbot1/move`
-- `swagbot1/trip_status`
-- `swagbot1/current_location`
-- `swagbot1/<table>/confirmed`
-
-Robot behavior:
-
-1. While `trip_status` is `en_route` or `returning`, keep line-following active.
-2. On each physical table marker:
-   - if `home === true`, continue without stopping
-   - if the table is not in `route`, continue without stopping
-   - otherwise stop and write:
-     - `current_location: "<table>"`
-     - `<table>/arrived: true`
-     - `trip_status: "waiting_confirmation"`
-3. While waiting:
-   - listen for `<table>/confirmed === true`
-4. When confirmed:
-   - if this was not the last route stop:
-     - write `trip_status: "en_route"`
-     - resume line-following
-   - if this was the last route stop:
-     - write `trip_status: "awaiting_return"`
-     - stay stopped
-5. When `home === true` and the waiter has set `trip_status: "returning"`:
-   - resume following the loop
-6. On docking marker:
-   - stop
-   - reset every route table to idle state
-   - clear top-level trip fields back to idle
-
-## Firmware Hook Points
-
-The robot sketch intentionally leaves these functions as hardware stubs:
-
-```cpp
-void continueFollowingLine();
-void stopRobot();
-void onReachTableMarker(const String &tableName);
-void onReachDocking();
-```
-
-What you need to wire:
-
-- Call `continueFollowingLine()` with your actual motor-forward / line-follow logic.
-- Call `stopRobot()` with your motor-stop logic.
-- Call `onReachTableMarker("table1")`, `onReachTableMarker("table2")`, and so on when your line or tag sensors detect each table marker.
-- Call `onReachDocking()` when the docking marker is detected.
-
-The current firmware file is a control/state shell, not the final motor implementation.
-
-## Waiter App Flow
-
-The waiter tracker page reads directly from `swagbot1`.
-
-UI behavior:
-
-- Always show `trip_status` and `current_location`.
-- Show `Confirm Delivered` only when:
-  - `trip_status === "waiting_confirmation"`
-  - `current_location` is one of `table1` to `table4`
-- On confirm, write:
-  - `<current_table>/confirmed: true`
-  - `<current_table>/status: true`
-- Show `Send Robot Home` only when:
-  - `trip_status === "awaiting_return"`
-- On send-home, write:
-  - `home: true`
-  - `trip_status: "returning"`
-
-## Dock Reset Behavior
-
-When the robot reaches docking after a return:
-
-- For each table that was in the last route, reset:
-  - `mission: "idle"`
-  - `status: false`
-  - `arrived: false`
-  - `confirmed: false`
-- Reset top-level state to:
-
-```json
-{
-  "route": null,
-  "trip_status": "idle",
-  "move": false,
-  "home": false,
-  "current_location": "docking"
-}
-```
-
-## ESP32 Firebase Setup
-
-Update these constants in [esp32_robot/esp32_robot.ino](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/esp32_robot/esp32_robot.ino:5):
+In [`esp32_robot/esp32_robot.ino`](esp32_robot/esp32_robot.ino):
 
 ```cpp
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#define FIREBASE_API_KEY "YOUR_FIREBASE_WEB_API_KEY"
-#define FIREBASE_DATABASE_URL "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
-#define FIREBASE_USER_EMAIL "swagbot1.robot@example.com"
-#define FIREBASE_USER_PASSWORD "YOUR_ROBOT_PASSWORD"
+#define API_KEY "YOUR_FIREBASE_WEB_API_KEY"
+#define DATABASE_URL "viva-restaurant-77588-default-rtdb.firebaseio.com"
 ```
-
-This robot account should receive a custom claim like:
-
-```json
-{ "role": "robot" }
-```
-
-## Firebase Setup Checklist
-
-1. Confirm the web app `.env` contains the Firebase web config and `VITE_FIREBASE_DATABASE_URL`.
-2. Create a dedicated auth user for the robot.
-3. Add custom claims:
-   - robot device user: `role = "robot"`
-   - waiter-facing app user(s): `role = "waiter"`
-   - backend/admin service path: `role = "backend"` when using client credentials
-4. Deploy [database.rules.json](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/database.rules.json:1).
-5. Deploy [functions/index.js](/C:/Users/ForEIgNa/Desktop/Viva_Restaurant/functions/index.js:1).
-6. Seed `swagbot1` with the idle schema before first run.
-
-## Seed Example
-
-```json
-{
-  "swagbot1": {
-    "current_location": "docking",
-    "home": false,
-    "move": false,
-    "route": null,
-    "trip_status": "idle",
-    "table1": { "mission": "idle", "status": false, "arrived": false, "confirmed": false },
-    "table2": { "mission": "idle", "status": false, "arrived": false, "confirmed": false },
-    "table3": { "mission": "idle", "status": false, "arrived": false, "confirmed": false },
-    "table4": { "mission": "idle", "status": false, "arrived": false, "confirmed": false }
-  }
-}
-```
-
-## Current Limitations
-
-- The firmware has line-following hook points, but not your real sensor/motor code yet.
-- The waiter UI is wired to one robot only: `swagbot1`.
-- The rules assume authenticated roles; they do not protect ownership if privileged credentials bypass rules.

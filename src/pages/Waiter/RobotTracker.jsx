@@ -264,9 +264,20 @@ function RobotTracker() {
   }
 
   const currentTable = getCurrentTable(robot);
+  const currentTableState = currentTable ? robot.tables[currentTable] : null;
+  const isDestination =
+    currentTableState?.mission === "destination" ||
+    currentTableState?.destination === true ||
+    currentTableState?.arrived === true ||
+    robot.tripStatus === TRIP_STATUSES.ARRIVED ||
+    robot.tripStatus === "arrived" ||
+    robot.tripStatus === "waiting_confirmation";
+
   const canConfirm =
-    (robot.tripStatus === TRIP_STATUSES.ARRIVED || robot.tripStatus === "arrived" || robot.tripStatus === "waiting_confirmation") &&
-    currentTable;
+    currentTable &&
+    currentTableState &&
+    isDestination &&
+    !currentTableState.confirmed;
   const statusMeta = tripStatusMeta[robot.tripStatus] || {
     label: formatTripStatus(robot.tripStatus),
     accent: "text-slate-100 border-white/10 bg-white/10",

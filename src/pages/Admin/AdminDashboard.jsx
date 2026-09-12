@@ -65,7 +65,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col md:flex-row h-screen bg-gray-100 text-gray-900 font-sans overflow-hidden relative">
       {/* PERSISTENT GLOBAL TOAST NOTIFICATION */}
       {outOfStockItems.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-right-10">
+        <div className="fixed bottom-6 right-6 z-100 animate-in fade-in slide-in-from-right-10">
           <div className="bg-red-600 text-white px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(220,38,38,0.5)] border-4 border-white flex flex-col gap-2 min-w-[320px]">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2 rounded-xl animate-pulse">
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="max-h-[150px] overflow-y-auto custom-scrollbar bg-black/20 rounded-xl p-3 mt-1 space-y-2">
+            <div className="max-h-37.5 overflow-y-auto custom-scrollbar bg-black/20 rounded-xl p-3 mt-1 space-y-2">
               {outOfStockItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-tight truncate pr-2">

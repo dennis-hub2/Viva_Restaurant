@@ -27,13 +27,13 @@ const Navbar = ({ searchQuery, setSearchQuery, cartItemCount, onOpenCart }) => {
                   href={link.href}
                   onClick={() => setActiveLink(link.name)}
                   className={`relative pb-1 transition-all duration-300 ease-in-out
-                    group-hover:opacity-40 hover:!opacity-100
+                    group-hover:opacity-40 hover:opacity-100!
                     ${isActive ? "opacity-100 text-[#3B302B]" : "opacity-100 text-gray-500"}
                   `}
                 >
                   {link.name}
                   <span
-                    className={`absolute bottom-0 left-0 h-[2px] bg-[#DE6555] transition-all duration-300
+                    className={`absolute bottom-0 left-0 h-0.5 bg-[#DE6555] transition-all duration-300
                     ${isActive ? "w-full" : "w-0"}`}
                   />
                 </a>
