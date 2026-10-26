@@ -1,3 +1,16 @@
+/**
+ * @file AdminLogin.jsx
+ * @description Authentication Portal for Management and System Administration.
+ * 
+ * Thesis Context:
+ * Enforces role-based administrative access control. Authenticates credentials against
+ * environment-governed security configurations (`.env`) without client hardcoding,
+ * establishing protected session tokens in persistent local storage.
+ * 
+ * @module pages/Admin/AdminLogin
+ * @author Thesis Research Team
+ */
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -5,6 +18,11 @@ import { useNavigate } from "react-router-dom";
 const ENV_ADMIN_USER = (import.meta.env.VITE_ADMIN_USERNAME || "").trim().toLowerCase();
 const ENV_ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || "";
 
+/**
+ * AdminLogin View Component
+ * 
+ * @returns {React.ReactElement} Administrative login form
+ */
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

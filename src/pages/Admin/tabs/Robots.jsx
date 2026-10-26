@@ -1,3 +1,17 @@
+/**
+ * @file Robots.jsx
+ * @description Administrative Fleet Operations and Realtime Diagnostics Console.
+ * 
+ * Thesis Context:
+ * Provides administrators and robotics engineers with raw telemetry observability into SwagBot1:
+ * - Realtime connection heartbeat via WebSocket stream.
+ * - Motor drive state (`move: true/false`), return flag (`home`), and active route traversal.
+ * - Individual station milestone flags (`mission`, `status`, `arrived`, `confirmed`).
+ * 
+ * @module pages/Admin/tabs/Robots
+ * @author Thesis Research Team
+ */
+
 import React, { useEffect, useState } from "react";
 import { onValue, ref } from "firebase/database";
 import { rtdb } from "../../../firebase";
@@ -17,6 +31,11 @@ const statusClasses = {
   [TRIP_STATUSES.RETURNING]: "text-purple-800 bg-purple-100 border-purple-300",
 };
 
+/**
+ * RobotsTab Component
+ * 
+ * @returns {React.ReactElement} Fleet monitoring dashboard view
+ */
 function RobotsTab() {
   const [robot, setRobot] = useState(null);
   const [isLoading, setIsLoading] = useState(true);

@@ -1,3 +1,15 @@
+/**
+ * @file CategoryTabs.jsx
+ * @description Horizontal Culinary Category Filter Rail.
+ * 
+ * Thesis Context:
+ * Enables one-click category filtering (All, Burgers, Pasta, Sushi, Ramen, etc.)
+ * with responsive horizontal scroll and active state indicators.
+ * 
+ * @module Components/CategoryTabs
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { categories } from "../data/menuData";
 

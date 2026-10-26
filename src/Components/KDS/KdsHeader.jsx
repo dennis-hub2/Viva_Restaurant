@@ -1,6 +1,28 @@
+/**
+ * @file KdsHeader.jsx
+ * @description Kitchen Display System Header Bar with Dispatch Telemetry and System Clock.
+ * 
+ * Thesis Context:
+ * Provides real-time operational status for kitchen personnel, including synchronized
+ * UTC/local clock, backend dispatch daemon connectivity indicators, and responsive navigation toggles.
+ * 
+ * @module Components/KDS/KdsHeader
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { Settings, Menu, Server, ShieldCheck, ShieldAlert } from "lucide-react";
 
+/**
+ * KdsHeader Component
+ * 
+ * @param {Object} props
+ * @param {Date} props.currentTime - Current system clock timestamp
+ * @param {boolean} props.dispatchEnabled - Whether background dispatch daemon is active
+ * @param {Object} props.dispatchStatus - Diagnostic telemetry object
+ * @param {Function} [props.onToggleSidebar] - Mobile sidebar toggle handler
+ * @returns {React.ReactElement} Header navigation bar
+ */
 export default function KdsHeader({
   currentTime,
   dispatchEnabled,

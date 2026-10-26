@@ -1,3 +1,15 @@
+/**
+ * @file StatCard.jsx
+ * @description Metric Card Displaying Quantitative KPIs and Growth Rates.
+ * 
+ * Thesis Context:
+ * Modular metric card rendering revenue totals, ticket volume, active tables,
+ * and growth percentage badges with responsive formatting.
+ * 
+ * @module pages/Admin/components/StatCard
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 
 const StatCard = ({ icon, title, value, growth, valueColor }) => (

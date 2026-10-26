@@ -1,3 +1,14 @@
+/**
+ * @file inspect_menu.js
+ * @description Catalog Diagnostic and Database Inspection Utility.
+ * 
+ * Thesis Context:
+ * Diagnostic CLI script to query and dump live Cloud Firestore menu documents in formatted JSON.
+ * 
+ * @module scripts/inspect_menu
+ * @author Thesis Research Team
+ */
+
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";

@@ -1,4 +1,14 @@
-// src/pages/Admin/components/DeleteConfirmationModal.jsx
+/**
+ * @file DeleteConfirmationModal.jsx
+ * @description Destructive Action Confirmation Guard for Menu Item Deletion.
+ * 
+ * Thesis Context:
+ * Provides user safety confirmation before executing irreversible deletions on Cloud Firestore documents.
+ * 
+ * @module pages/Admin/components/DeleteConfirmationModal
+ * @author Thesis Research Team
+ */
+
 import React, { useEffect } from "react";
 
 const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, itemName }) => {

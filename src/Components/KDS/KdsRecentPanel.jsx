@@ -1,6 +1,27 @@
+/**
+ * @file KdsRecentPanel.jsx
+ * @description Real-Time Recent Activity Sidebar for Kitchen Operations.
+ * 
+ * Thesis Context:
+ * Renders a side panel with the latest completed tickets, enabling fast verification
+ * of dispatched trays and rapid ticket inspection without navigating away from the active cooking grid.
+ * 
+ * @module Components/KDS/KdsRecentPanel
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { History, ChevronRight } from "lucide-react";
 
+/**
+ * KdsRecentPanel Component
+ * 
+ * @param {Object} props
+ * @param {Array<Object>} props.completedList - List of recently fulfilled tickets
+ * @param {Function} props.setSelectedOrder - Select ticket callback
+ * @param {Function} props.setShowAllHistory - Open full archive callback
+ * @returns {React.ReactElement} Recent activity sidebar
+ */
 export default function KdsRecentPanel({
   completedList,
   setSelectedOrder,

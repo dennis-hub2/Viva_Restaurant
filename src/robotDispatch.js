@@ -1,3 +1,23 @@
+/**
+ * @file robotDispatch.js
+ * @description Autonomous Robot Dispatch Engine, Multi-Stop Route Planner, and Two-Way Sync Handler.
+ * 
+ * Thesis Context:
+ * In smart restaurant environments, transitioning prepared kitchen tickets into physical robotic deliveries
+ * requires resolving concurrency, race conditions, and spatial constraints.
+ * 
+ * This module coordinates:
+ * 1. State Invariant Checking: Ensuring 'swagbot1' is docked, available, and not already engaged.
+ * 2. Route Expansion Algorithm (`expandRoute`): Expanding destination stops into a sequential perimeter path.
+ * 3. Atomic Database Synchronization: Executing RTDB transactions for robot command dispatch alongside
+ *    Firestore batch writes for order tracking status updates.
+ * 4. Dual-Directional Event Handshaking (`initDispatchListeners`): Reacting to real-time table delivery confirmations
+ *    in RTDB to automatically transition the corresponding Firestore order document from 'ready' to 'completed'.
+ * 
+ * @module robotDispatch
+ * @author Thesis Research Team
+ */
+
 import {
   getFirestore,
   collection,
@@ -19,9 +39,22 @@ import {
   get,
 } from "firebase/database";
 
+/**
+ * Identifier of the target robotic delivery vehicle.
+ * @constant {string}
+ */
 const ROBOT_ID = "swagbot1";
+
+/**
+ * Sequenced list of dining table station markers.
+ * @constant {string[]}
+ */
 const TABLES = ["table1", "table2", "table3", "table4"];
 
+/**
+ * In-memory telemetry and observability state for the dispatch engine.
+ * @type {{listenersActive: boolean, lastSuccessAt: Date|null, lastError: string|null, manualRuns: number}}
+ */
 const dispatchState = {
   listenersActive: false,
   lastSuccessAt: null,
@@ -29,6 +62,11 @@ const dispatchState = {
   manualRuns: 0,
 };
 
+/**
+ * Factory creating default station flags for an idle table.
+ * 
+ * @returns {{mission: string, status: boolean, arrived: boolean, confirmed: boolean}}
+ */
 function tableState() {
   return {
     mission: "idle",
@@ -38,6 +76,11 @@ function tableState() {
   };
 }
 
+/**
+ * Builds the comprehensive idle state representation for the delivery robot.
+ * 
+ * @returns {Object} Complete default robot schema
+ */
 function buildIdleRobotState() {
   return {
     current_location: "docking",
@@ -52,6 +95,13 @@ function buildIdleRobotState() {
   };
 }
 
+/**
+ * Parses and sanitizes an order payload to extract its destination table identifier (e.g. 'table2').
+ * Supports multiple naming conventions (tableName, table, tableNumber) and regex digit extraction.
+ * 
+ * @param {Object} [order={}] - Order data document
+ * @returns {string|null} Valid table station identifier (e.g. 'table1'), or null if unresolvable
+ */
 function getOrderTableName(order = {}) {
   const rawTable = order.tableName || order.table || order.tableNumber;
   if (rawTable == null) return null;
@@ -63,12 +113,29 @@ function getOrderTableName(order = {}) {
   return TABLES.includes(tableName) ? tableName : null;
 }
 
+/**
+ * Sorts unique table names along the unidirectional loop perimeter order.
+ * 
+ * @param {string[]} route - Array of table names
+ * @returns {string[]} Monotonically ordered route array
+ */
 function sortRoute(route) {
   return [...new Set(route)].sort(
     (left, right) => TABLES.indexOf(left) - TABLES.indexOf(right),
   );
 }
 
+/**
+ * Expands a target set of delivery stops into a contiguous perimeter route starting from table1.
+ * 
+ * Thesis Note on Track Topology:
+ * Because the robot operates on a unidirectional physical guide path (docking -> table1 -> ... -> table4 -> docking),
+ * reaching Table 3 requires passing Table 1 and Table 2. Expanding the route slice [0 ... maxIndex]
+ * guarantees the microcontroller can evaluate each consecutive checkpoint on its path.
+ * 
+ * @param {string[]} route - Array of target destination table names
+ * @returns {string[]} Expanded array of all tables traversed up to the furthest target stop
+ */
 function expandRoute(route) {
   if (!route || route.length === 0) return [];
   let maxIndex = -1;
@@ -82,6 +149,12 @@ function expandRoute(route) {
   return TABLES.slice(0, maxIndex + 1);
 }
 
+/**
+ * Normalizes an arbitrary route value (Array or Object dictionary) into a validated sorted array.
+ * 
+ * @param {Array|Object|null} route - Raw route data
+ * @returns {string[]} Validated table names
+ */
 function normalizeRouteValue(route) {
   const routeValues = Array.isArray(route)
     ? route
@@ -98,6 +171,17 @@ function normalizeRouteValue(route) {
   );
 }
 
+/**
+ * Evaluates whether the robot is physically and computationally ready to initiate a new dispatch trip.
+ * 
+ * Preconditions:
+ * 1. Robot is not currently in motion (`move !== true`).
+ * 2. Robot trip status is either "docking" or "idle".
+ * 3. Robot is not currently executing a return command (`home !== true`).
+ * 
+ * @param {Object} [robot={}] - Current robot node snapshot
+ * @returns {boolean} True if robot is eligible to start a delivery
+ */
 function canStartTrip(robot = {}) {
   const status = robot.trip_status || "docking";
   return (
@@ -107,6 +191,13 @@ function canStartTrip(robot = {}) {
   );
 }
 
+/**
+ * Constructs the new RTDB trip payload for the robot with active destination tables flagged.
+ * 
+ * @param {string[]} [route=[]] - Full traversed path
+ * @param {string[]} [targets=[]] - Specific tables receiving food deliveries
+ * @returns {Object} Complete trip state object for RTDB update
+ */
 function buildTripState(route = [], targets = []) {
   const nextRobot = buildIdleRobotState();
   nextRobot.move = true;
@@ -129,6 +220,17 @@ function buildTripState(route = [], targets = []) {
   return nextRobot;
 }
 
+/**
+ * Automated batch dispatcher: finds ready unassigned orders in Firestore and starts a batched delivery.
+ * 
+ * Concurrency Safety:
+ * Employs a Firebase RTDB transaction on `/swagbot1` to prevent race conditions when multiple
+ * clients or functions attempt simultaneous dispatches.
+ * 
+ * @param {import('firebase/firestore').Firestore} firestore - Firestore instance
+ * @param {import('firebase/database').Database} database - Realtime Database instance
+ * @returns {Promise<void>}
+ */
 async function dispatchReadyOrdersIfPossible(firestore, database) {
   const robotRef = ref(database, ROBOT_ID);
 
@@ -170,6 +272,7 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
         .map((docSnap) => getOrderTableName(docSnap.data()))
         .filter(Boolean)
     );
+    // Batch limit: maximum of 2 destination tables per delivery trip for balancing payload & speed
     const activeTargets = targets.slice(0, 2);
     const route = expandRoute(activeTargets);
 
@@ -182,7 +285,7 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
     const transactionResult = await runTransaction(robotRef, (current) => {
       const currentRobot = current || buildIdleRobotState();
       if (!canStartTrip(currentRobot)) {
-        return;
+        return; // Abort transaction if another process updated robot state
       }
       return buildTripState(route, activeTargets);
     });
@@ -192,6 +295,7 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
       return;
     }
 
+    // Atomic update in Firestore marking orders as dispatched and assigned to ROBOT_ID
     const ordersToAssign = dispatchableOrders.filter((docSnap) => {
       return activeTargets.includes(getOrderTableName(docSnap.data()));
     });
@@ -218,11 +322,13 @@ async function dispatchReadyOrdersIfPossible(firestore, database) {
 }
 
 /**
- * Call this once after the "backend" user is signed in, e.g. on dashboard mount.
- * Keeps two live listeners running for as long as the page stays open:
- *   1. Firestore: any order transitioning to status "ready"
- *   2. RTDB: robot trip_status changing to "idle"
- * Returns an unsubscribe function you can call on unmount.
+ * Initializes persistent real-time listeners synchronizing RTDB delivery confirmations into Firestore.
+ * 
+ * Handshake Mechanism:
+ * When a customer or waiter confirms delivery at Table X in RTDB (`swagbot1/tableX/confirmed = true`),
+ * this listener queries corresponding Firestore tickets for Table X and marks their status as 'completed'.
+ * 
+ * @returns {Function} Cleanup/unsubscribe callback to release WebSocket listeners
  */
 export function initDispatchListeners() {
   const firestore = getFirestore();
@@ -274,6 +380,11 @@ export function initDispatchListeners() {
   };
 }
 
+/**
+ * Manually executes a single dispatch cycle on demand.
+ * 
+ * @returns {Promise<Object>} Updated dispatch status report
+ */
 export async function runManualDispatch() {
   const firestore = getFirestore();
   const database = getDatabase();
@@ -282,6 +393,20 @@ export async function runManualDispatch() {
   return getDispatchStatus();
 }
 
+/**
+ * Dispatches the robot specifically for an individual kitchen order (invoked from KDS).
+ * 
+ * Execution Steps:
+ * 1. Validates target table name and order ID.
+ * 2. Computes the expanded unidirectional trajectory route.
+ * 3. Commits atomic RTDB state: route, target table 'destination' mission, move: true, status: 'en_route'.
+ * 4. Updates Cloud Firestore ticket to 'ready' with assigned robot and server timestamp.
+ * 
+ * @param {Object} order - Kitchen order ticket document
+ * @param {string} [chosenRobotId=ROBOT_ID] - Robot identifier
+ * @returns {Promise<{queued: boolean}>} Dispatch outcome
+ * @throws {Error} If order lacks valid table assignment or order ID
+ */
 export async function assignRobotForOrder(order, chosenRobotId = ROBOT_ID) {
   const firestore = getFirestore();
   const database = getDatabase();
@@ -313,10 +438,10 @@ export async function assignRobotForOrder(order, chosenRobotId = ROBOT_ID) {
   payload.move = true;
   payload.trip_status = "en_route";
 
-  // Sync RTDB state
+  // Commit synchronized RTDB state update
   await runTransaction(robotRef, () => payload);
 
-  // Sync Firestore order
+  // Commit Firestore ticket update
   await updateDoc(doc(firestore, "orders", orderId), {
     assignedRobot: targetRobotId,
     dispatchedAt: serverTimestamp(),
@@ -329,6 +454,11 @@ export async function assignRobotForOrder(order, chosenRobotId = ROBOT_ID) {
   return { queued: false };
 }
 
+/**
+ * Retrieves the current execution and health telemetry of the dispatch engine.
+ * 
+ * @returns {Object} Diagnostic snapshot
+ */
 export function getDispatchStatus() {
   return {
     ...dispatchState,

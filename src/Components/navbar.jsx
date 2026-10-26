@@ -1,3 +1,15 @@
+/**
+ * @file navbar.jsx
+ * @description Customer Navigation Header with Live Dish Search and Cart Badge.
+ * 
+ * Thesis Context:
+ * Sticky top navigation bar providing continuous access to dish catalog searching,
+ * section scrolling, and dynamic shopping cart trigger with real-time item count badge.
+ * 
+ * @module Components/navbar
+ * @author Thesis Research Team
+ */
+
 import React, { useState } from "react";
 import { SearchIcon } from "./icons/Icons";
 

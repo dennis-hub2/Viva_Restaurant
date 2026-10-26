@@ -1,3 +1,15 @@
+/**
+ * @file Icons.jsx
+ * @description Scalable Vector Graphics (SVG) Icon Design System.
+ * 
+ * Thesis Context:
+ * Provides resolution-independent vector icons for search triggers, shopping cart indicators,
+ * star ratings, and decorative fluid splashes.
+ * 
+ * @module Components/icons/Icons
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 
 export const SearchIcon = () => (

@@ -1,3 +1,17 @@
+/**
+ * @file CustomerHome.jsx
+ * @description Customer Self-Service Dining & Ordering Portal.
+ * 
+ * Thesis Context:
+ * Serves as the primary customer interface in the smart restaurant ecosystem.
+ * Dynamically queries dishes and live pricing from Cloud Firestore, provides real-time
+ * category filtering and search indexing, manages optimistic shopping cart state,
+ * handles table assignment, and mounts the active robot delivery tracker.
+ * 
+ * @module pages/CustomerHome
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import Navbar from "../Components/navbar";
 import Hero from "../Components/Hero";
@@ -7,7 +21,6 @@ import MenuCard from "../Components/MenuCard";
 import CartDrawer from "../Components/CartDrawer";
 import ActiveOrderTracker from "../Components/ActiveOrderTracker";
 
-// 1. NEW: Firebase imports (We deleted the local menuData import!)
 import {
   collection,
   onSnapshot,
@@ -16,8 +29,13 @@ import {
   doc,
   increment,
 } from "firebase/firestore";
-import { db } from "../firebase"; // ⚠️ IMPORTANT: Verify this path points to your firebase config file!
+import { db } from "../firebase";
 
+/**
+ * CustomerHome View Component
+ * 
+ * @returns {React.ReactElement} Complete customer dining and ordering landing page
+ */
 const CustomerHome = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");

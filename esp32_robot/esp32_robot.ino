@@ -1,3 +1,55 @@
+/**
+ * ============================================================================
+ * THESIS PROJECT: VIVA RESTAURANT AUTONOMOUS ROBOTIC DELIVERY SYSTEM
+ * HARDWARE FIRMWARE EMBEDDED APPLICATION: SwagBot1
+ * ============================================================================
+ * 
+ * Abstract:
+ * This embedded sketch implements the physical control firmware for an autonomous indoor
+ * service robot operating within a restaurant dining environment. The platform navigates
+ * along an optical guide path (black track line on light floor) to deliver culinary orders
+ * from the kitchen docking station to dining tables (1 through 4).
+ * 
+ * Architectural & Hardware Specifications:
+ * - Microcontroller: Espressif ESP32-WROOM-32 (240 MHz dual-core, 520 KB SRAM).
+ * - Motor Drive Subsystem: Dual high-power BTS7960 43A H-Bridge motor drivers driving
+ *   differential drive DC geared motors via PWM duty cycle modulation.
+ * - Optical Guidance & Station Detection: 2-channel TCRT5000 infrared reflectance array.
+ *   - Line Tracking: Single-sensor differential steering correction.
+ *   - Station Marker: Dual-sensor trigger (both sensors detecting black line simultaneously)
+ *     signaling arrival at an intermediate station or target dining table.
+ * - Safety & Obstacle Detection: Dual HC-SR04 ultrasonic rangefinders (Front: dynamic stop
+ *   at < 25 cm threshold; Rear: safety proximity verification).
+ * - Human-Robot Interaction (HRI): SSD1306 0.96" 128x64 I2C OLED running FluxGarage RoboEyes
+ *   rendering responsive facial animations (happy, neutral, blinking, curious).
+ * - Cloud Telemetry & Handshake: Mobizt Firebase ESP Client connecting via 2.4 GHz IEEE 802.11 b/g/n
+ *   to Google Firebase Realtime Database (RTDB) over HTTPS/WebSockets.
+ * 
+ * Finite State Machines:
+ * 1. NavigationState:
+ *    - WAITING_AT_DOCKING: Parked at home station awaiting dispatch route.
+ *    - MOVING_TO_DESTINATION: Line-tracking towards target table.
+ *    - WAITING_FOR_CONFIRMATION: Stationary at table awaiting human confirmation.
+ *    - RETURNING_TO_DOCKING: Traversing remaining loop back to docking station.
+ * 2. MarkerState:
+ *    - NORMAL_LINE_FOLLOWING: Continuous differential line tracking.
+ *    - MARKER_STOPPING: Station marker identified; halting for station evaluation.
+ *    - MARKER_CROSSING: Controlled crawl across the wide station marker strip.
+ *    - MARKER_EXITING: Blanking delay preventing spurious duplicate triggers.
+ * 
+ * Pinout Reference:
+ * - Left Motor:  RPWM=26, LPWM=27, REN=25, LEN=23
+ * - Right Motor: RPWM=14, LPWM=19, REN=33, LEN=32
+ * - IR Sensors:  IR1 (Left)=5, IR2 (Right)=16
+ * - Front Sonar: TRIG=18, ECHO=17
+ * - Rear Sonar:  TRIG=12, ECHO=13
+ * - OLED Display: I2C (SDA=21, SCL=22)
+ * 
+ * Author: Thesis Research & Engineering Team
+ * Year: Academic Thesis Submission
+ * ============================================================================
+ */
+
 #define ENABLE_USER_AUTH
 #define ENABLE_DATABASE
 

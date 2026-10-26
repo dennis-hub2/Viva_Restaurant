@@ -1,3 +1,18 @@
+/**
+ * @file sync_daemon.js
+ * @description Standalone Node.js Synchronization Daemon for Headless Operation.
+ * 
+ * Thesis Context:
+ * In edge server and kiosk deployments where no continuous browser session is maintained,
+ * this standalone background process connects via Firebase Admin SDK to provide:
+ * 1. Continuous bidirectional event synchronization between Cloud Firestore orders and RTDB robot telemetry.
+ * 2. Automated ticket completion transitions upon table delivery confirmation.
+ * 3. Health monitoring and heartbeat logging for fault diagnosis.
+ * 
+ * @module scripts/sync_daemon
+ * @author Thesis Research Team
+ */
+
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";

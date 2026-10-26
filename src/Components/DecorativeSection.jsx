@@ -1,3 +1,15 @@
+/**
+ * @file DecorativeSection.jsx
+ * @description Floating Hero Graphic Element with Dynamic Micro-Animations.
+ * 
+ * Thesis Context:
+ * Enhances user experience with dynamic floating physics animations, SVG splash accents,
+ * and high-resolution food presentation.
+ * 
+ * @module Components/DecorativeSection
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { DecorativeSplash } from "./icons/Icons";
 

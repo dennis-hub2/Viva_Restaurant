@@ -1,7 +1,24 @@
+/**
+ * @file RobotAccess.jsx
+ * @description Waitstaff Fleet Entry Point and Robot Unit Selector.
+ * 
+ * Thesis Context:
+ * Provides an entry screen enabling staff to specify or switch the active robotic unit ID
+ * (defaulting to 'swagbot1') before navigating to the live telemetry monitoring console.
+ * 
+ * @module pages/Waiter/RobotAccess
+ * @author Thesis Research Team
+ */
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROBOT_ID } from "../../data/robotProtocol";
 
+/**
+ * RobotAccess View Component
+ * 
+ * @returns {React.ReactElement} Robot selector view
+ */
 function RobotAccess() {
   const navigate = useNavigate();
   const [robotId, setRobotId] = useState(ROBOT_ID);

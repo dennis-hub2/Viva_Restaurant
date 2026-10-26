@@ -1,6 +1,28 @@
+/**
+ * @file KitchenArchiveModal.jsx
+ * @description Kitchen History Archive Modal for Recalling Completed Orders.
+ * 
+ * Thesis Context:
+ * Enables kitchen staff to inspect historical fulfilled tickets, verify preparation
+ * history, and review culinary item breakdowns for audit and reconciliation.
+ * 
+ * @module Components/KDS/KitchenArchiveModal
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { X, Check } from "lucide-react";
 
+/**
+ * KitchenArchiveModal Component
+ * 
+ * @param {Object} props
+ * @param {boolean} props.isOpen - Modal visibility flag
+ * @param {Function} props.onClose - Dismissal callback
+ * @param {Array<Object>} props.completedList - Array of completed order tickets
+ * @param {Function} props.setSelectedOrder - Selection callback to view full ticket
+ * @returns {React.ReactElement|null} Archive dialog overlay or null
+ */
 function KitchenArchiveModal({
   isOpen,
   onClose,

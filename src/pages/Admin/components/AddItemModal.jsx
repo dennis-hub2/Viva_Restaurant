@@ -1,3 +1,15 @@
+/**
+ * @file AddItemModal.jsx
+ * @description Catalog Dish Creation Modal for Cloud Firestore Menu Collection.
+ * 
+ * Thesis Context:
+ * Validates and provisions new menu items, inputting culinary titles, category classification,
+ * unit pricing in Ghanaian Cedis (₵), initial pantry stock, preparation latency, and asset references.
+ * 
+ * @module pages/Admin/components/AddItemModal
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 
 // --- Sub-Components ---

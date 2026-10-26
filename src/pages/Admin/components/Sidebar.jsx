@@ -1,3 +1,15 @@
+/**
+ * @file Sidebar.jsx
+ * @description Administration Navigation Sidebar and Session Termination Controller.
+ * 
+ * Thesis Context:
+ * Main navigation rail for the administrator dashboard, providing switches across
+ * operations, menu, stock, sales, personnel, robotics, and order history, with session logout.
+ * 
+ * @module pages/Admin/components/Sidebar
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../../../firebase";

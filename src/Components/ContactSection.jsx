@@ -1,3 +1,15 @@
+/**
+ * @file ContactSection.jsx
+ * @description Customer Support, Inquiries, and Location Information Section.
+ * 
+ * Thesis Context:
+ * Renders the restaurant contact interface, operating hours, geolocation details,
+ * and direct inquiry messaging form.
+ * 
+ * @module Components/ContactSection
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { DecorativeSplash } from "./icons/Icons";
 

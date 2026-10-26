@@ -1,3 +1,20 @@
+/**
+ * @file KitchenDisplay.jsx
+ * @description Kitchen Display System (KDS) and Culinary Ticket Dispatching Dashboard.
+ * 
+ * Thesis Context:
+ * Serves as the operational hub for kitchen chefs and expeditors.
+ * Real-time features:
+ * 1. Live Ticket Queues: Organizes orders dynamically into 'new', 'progress', and 'ready' lanes.
+ * 2. Preparation Latency Tracking: Elapsed timers highlight ticket urgency.
+ * 3. Cyber-Physical Dispatch Control: Empowers kitchen staff to verify meal loading onto SwagBot1
+ *    and trigger automated robotic dispatch to the target dining station.
+ * 4. Audit Trail: Archives completed receipts and historical tickets with comprehensive timestamping.
+ * 
+ * @module pages/KDS/KitchenDisplay
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -28,6 +45,11 @@ import KdsRecentPanel from "../../Components/KDS/KdsRecentPanel";
 import KdsFooter from "../../Components/KDS/KdsFooter";
 import KdsReceiptsLog from "../../Components/KDS/KdsReceiptsLog";
 
+/**
+ * KitchenDisplay View Component
+ * 
+ * @returns {React.ReactElement} Comprehensive kitchen workstation display
+ */
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState([]);
   const [completedList, setCompletedList] = useState([]);

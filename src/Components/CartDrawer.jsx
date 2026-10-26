@@ -1,6 +1,31 @@
+/**
+ * @file CartDrawer.jsx
+ * @description Customer Shopping Cart Drawer and Table Assignment Checkout Engine.
+ * 
+ * Thesis Context:
+ * Manages optimistic customer cart state, quantity mutations, table number assignment (Tables 1-4),
+ * subtotal and fee computations in Ghanaian Cedis (₵), and checkout order dispatch to Cloud Firestore.
+ * 
+ * @module Components/CartDrawer
+ * @author Thesis Research Team
+ */
+
 import React, { useEffect, useState } from "react";
 import { CloseIcon, BigCartIcon } from "./icons/Icons";
 
+/**
+ * CartDrawer Component
+ * 
+ * @param {Object} props
+ * @param {boolean} props.isOpen - Drawer open state
+ * @param {Function} props.onClose - Close drawer callback
+ * @param {Array<Object>} props.cartItems - Array of items in customer cart
+ * @param {Function} props.onRemoveItem - Remove item callback
+ * @param {Function} props.onUpdateQuantity - Quantity adjustment callback
+ * @param {Function} props.onClearCart - Empty cart callback
+ * @param {Function} props.onCheckout - Checkout order submission callback
+ * @returns {React.ReactElement|null} Slide-over drawer overlay
+ */
 const CartDrawer = ({
   isOpen,
   onClose,

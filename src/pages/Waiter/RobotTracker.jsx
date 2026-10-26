@@ -1,3 +1,21 @@
+/**
+ * @file RobotTracker.jsx
+ * @description Waitstaff Telemetry Console and Cyber-Physical Robot Supervision Interface.
+ * 
+ * Thesis Context:
+ * Enables waitstaff to maintain operational visibility over autonomous food delivery.
+ * Displays live positional telemetry (`current_location`), spatial track layout, table mission status,
+ * manual delivery confirmation handshakes, emergency return-to-base triggers, and associated ticket details.
+ * 
+ * Subsystem Interactions:
+ * - Realtime Database: Listens to `/swagbot1` for sub-second telemetry updates.
+ * - Cloud Firestore: Queries live orders to associate dining party tickets with station waypoints.
+ * - Physical Actuation Handshake: Writes `confirmed: true` and `home: true` to drive robot state transitions.
+ * 
+ * @module pages/Waiter/RobotTracker
+ * @author Thesis Research Team
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { onValue, ref, update } from "firebase/database";

@@ -1,3 +1,17 @@
+/**
+ * @file MenuManagement.jsx
+ * @description Catalog CRUD and Culinary Item Administration Tab.
+ * 
+ * Thesis Context:
+ * Enables dynamic menu adjustments without application redeployment:
+ * - Adding new dishes with nutritional details, prep times, pricing, and image URLs.
+ * - Live editing of dish prices in Ghanaian Cedis (₵).
+ * - Soft-deletion and catalog cleanup via Cloud Firestore mutations.
+ * 
+ * @module pages/Admin/tabs/MenuManagement
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import MenuGrid from "../components/MenuGrid";
 import EditItemModal from "../components/EditItemModel";
@@ -13,6 +27,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+/**
+ * MenuManagement Component
+ * 
+ * @returns {React.ReactElement} Menu catalog administration interface
+ */
 const MenuManagement = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

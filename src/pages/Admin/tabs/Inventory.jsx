@@ -1,3 +1,17 @@
+/**
+ * @file Inventory.jsx
+ * @description Real-Time Stock Tracking, Threshold Alerts, and Inventory Control.
+ * 
+ * Thesis Context:
+ * Synchronizes physical pantry inventory with customer-facing order intake:
+ * - Real-time stock counts decremented automatically upon order checkout.
+ * - Out-of-stock badges preventing customers from ordering depleted dishes.
+ * - Low-stock threshold warnings assisting kitchen supply replenishment.
+ * 
+ * @module pages/Admin/tabs/Inventory
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -9,6 +23,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+/**
+ * InventoryTab Component
+ * 
+ * @returns {React.ReactElement} Inventory management dashboard view
+ */
 const InventoryTab = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

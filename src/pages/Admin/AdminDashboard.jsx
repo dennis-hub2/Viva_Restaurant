@@ -1,9 +1,27 @@
+/**
+ * @file AdminDashboard.jsx
+ * @description Centralized Restaurant Operations, Inventory, Analytics, and Fleet Administration Console.
+ * 
+ * Thesis Context:
+ * Serves as the executive administration dashboard. Aggregates data from Cloud Firestore
+ * and Realtime Database across 7 modular sub-panels:
+ * 1. Overview: Live order queues, real-time KPI metrics, stock alerts.
+ * 2. MenuManagement: CRUD operations on food items, prices, descriptions, and assets.
+ * 3. Inventory: Real-time stock counts, ingredient tracking, depletion warnings.
+ * 4. SalesAnalysis: Revenue aggregation, sales trends, top-selling dish analytics.
+ * 5. Staff: Kitchen and waiter credential and account management.
+ * 6. Robots: Live hardware telemetry, motor status, and manual overrides for SwagBot1.
+ * 7. OrderHistory: Audit trail of all fulfilled restaurant tickets.
+ * 
+ * @module pages/Admin/AdminDashboard
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../firebase";
 
-// Importing all your exact tab files!
 import Overview from "./tabs/Overview";
 import MenuManagement from "./tabs/MenuManagement";
 import Inventory from "./tabs/Inventory";
@@ -12,6 +30,11 @@ import Staff from "./tabs/Staff";
 import Robots from "./tabs/Robots";
 import OrderHistory from "./tabs/OrderHistory";
 
+/**
+ * AdminDashboard View Component
+ * 
+ * @returns {React.ReactElement} Master admin console container
+ */
 export default function AdminDashboard() {
   const [outOfStockItems, setOutOfStockItems] = useState([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);

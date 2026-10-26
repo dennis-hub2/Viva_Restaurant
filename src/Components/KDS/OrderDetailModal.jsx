@@ -1,7 +1,33 @@
+/**
+ * @file OrderDetailModal.jsx
+ * @description Detailed Kitchen Ticket Modal with Fleet Assignment Controls.
+ * 
+ * Thesis Context:
+ * Presents an expanded view of an individual order ticket, displaying itemized culinary
+ * components, dish options, timing metrics, and direct robot fleet selection ('swagbot1')
+ * for dispatching.
+ * 
+ * @module Components/KDS/OrderDetailModal
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { Timestamp } from "firebase/firestore";
 import { X, Clock, Flame, Utensils, ChevronRight, Check } from "lucide-react";
 
+/**
+ * OrderDetailModal Component
+ * 
+ * @param {Object} props
+ * @param {Object} props.order - Selected order object
+ * @param {Function} props.onClose - Modal dismissal handler
+ * @param {Date} props.currentTime - Synchronized current time
+ * @param {boolean} props.dispatchEnabled - Whether automatic dispatch is enabled
+ * @param {Function} props.handleManualDispatch - Manual dispatch callback
+ * @param {Function} props.handleAssignRobotNow - Direct assign callback
+ * @param {Function} props.handleUpdateStatus - Status transition callback
+ * @returns {React.ReactElement|null} Modal overlay element or null
+ */
 function OrderDetailModal({
   order,
   onClose,

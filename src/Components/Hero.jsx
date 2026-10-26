@@ -1,3 +1,15 @@
+/**
+ * @file Hero.jsx
+ * @description Customer Landing Hero Banner and Call-to-Action.
+ * 
+ * Thesis Context:
+ * Main introductory visual section for the dining application, featuring brand typography,
+ * restaurant value proposition, and smooth-scroll anchor to the culinary catalog.
+ * 
+ * @module Components/Hero
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 
 const Hero = () => {

@@ -1,3 +1,17 @@
+/**
+ * @file MenuCard.jsx
+ * @description Customer Digital Menu Item Card with Stock Validation.
+ * 
+ * Thesis Context:
+ * Displays individual dishes in the customer ordering grid. Features:
+ * - Real-time stock verification: Disables 'Add to Cart' when stock === 0.
+ * - Dynamic price formatting in Ghanaian Cedis (₵).
+ * - Dish description, average rating, and preparation duration metrics.
+ * 
+ * @module Components/MenuCard
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { StarIcon } from "./icons/Icons";
 

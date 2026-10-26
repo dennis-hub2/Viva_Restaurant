@@ -1,3 +1,14 @@
+/**
+ * @file card.jsx
+ * @description Neumorphic Food Presentation Card.
+ * 
+ * Thesis Context:
+ * Modular UI card with hard-offset box shadows and circular image badges.
+ * 
+ * @module Components/card
+ * @author Thesis Research Team
+ */
+
 import { Star } from "lucide-react";
 
 const Card = () => {

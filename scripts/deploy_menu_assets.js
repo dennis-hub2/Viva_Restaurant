@@ -1,3 +1,15 @@
+/**
+ * @file deploy_menu_assets.js
+ * @description Catalog Asset Deployment and Firestore Document Synchronization Script.
+ * 
+ * Thesis Context:
+ * Automates the deployment of high-resolution food visual assets from local artifact directories
+ * into the public web server directory and updates corresponding Cloud Firestore menu documents.
+ * 
+ * @module scripts/deploy_menu_assets
+ * @author Thesis Research Team
+ */
+
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";

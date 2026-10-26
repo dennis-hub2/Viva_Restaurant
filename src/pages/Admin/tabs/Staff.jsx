@@ -1,3 +1,17 @@
+/**
+ * @file Staff.jsx
+ * @description Staff Directory and Shift Assignment Management.
+ * 
+ * Thesis Context:
+ * Manages human resources within the dining establishment:
+ * - Registering servers, kitchen chefs, expeditors, and technicians.
+ * - Shift assignments (Morning, Afternoon, Evening).
+ * - Real-time role-based access status management in Cloud Firestore.
+ * 
+ * @module pages/Admin/tabs/Staff
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -9,6 +23,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+/**
+ * StaffTab Component
+ * 
+ * @returns {React.ReactElement} Personnel management directory view
+ */
 const StaffTab = () => {
   const [staff, setStaff] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

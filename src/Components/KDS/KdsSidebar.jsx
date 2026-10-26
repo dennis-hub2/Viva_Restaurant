@@ -1,6 +1,31 @@
+/**
+ * @file KdsSidebar.jsx
+ * @description Kitchen Workstation Mode Navigation Rail.
+ * 
+ * Thesis Context:
+ * Modular navigation rail allowing kitchen staff to switch between primary views:
+ * - Queue: Active incoming tickets.
+ * - Cooking: Orders currently under preparation.
+ * - Archive: Completed history modal.
+ * - Logs: Comprehensive receipt ledger.
+ * 
+ * @module Components/KDS/KdsSidebar
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { LayoutDashboard, Clock, CheckCircle2, FileText } from "lucide-react";
 
+/**
+ * KdsSidebar Component
+ * 
+ * @param {Object} props
+ * @param {string} props.activeNav - Currently selected view mode identifier
+ * @param {Function} props.setActiveTab - View selection dispatcher
+ * @param {boolean} [props.isOpen] - Mobile drawer open state
+ * @param {Function} [props.setIsOpen] - Mobile drawer toggle dispatcher
+ * @returns {React.ReactElement} Kitchen navigation sidebar
+ */
 export default function KdsSidebar({ activeNav, setActiveTab, isOpen, setIsOpen }) {
   const items = [
     {

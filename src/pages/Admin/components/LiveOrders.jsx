@@ -1,3 +1,15 @@
+/**
+ * @file LiveOrders.jsx
+ * @description Real-Time Order Stream Panel for Administrative Monitoring.
+ * 
+ * Thesis Context:
+ * Renders an active list of pending and preparing orders with live Firestore snapshot updates,
+ * displaying table allocations, meal items, and timestamps.
+ * 
+ * @module pages/Admin/components/LiveOrders
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, query, where, orderBy, limit } from "firebase/firestore";
 import { db } from "../../../firebase";

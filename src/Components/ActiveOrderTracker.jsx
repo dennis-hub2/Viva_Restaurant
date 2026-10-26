@@ -1,14 +1,43 @@
+/**
+ * @file ActiveOrderTracker.jsx
+ * @description Customer-Facing Real-Time Order Stepper and Cyber-Physical Delivery Handshake.
+ * 
+ * Thesis Context:
+ * Providing transparency in robotic delivery requires real-time synchronization between
+ * transactional order progression (placed, cooking) and physical spatial telemetry (robot en route,
+ * arrived at table).
+ * 
+ * Key Features:
+ * 1. Dual-Database Subscription: Listens concurrently to Cloud Firestore (`orders/{orderId}`)
+ *    and Firebase Realtime Database (`{robotId}`).
+ * 2. Visual 5-Stage Stepper: (1) Placed -> (2) Cooking -> (3) Transit -> (4) Arrived -> (5) Done.
+ * 3. Decentralized Customer Confirmation: Enables the patron to confirm meal handover directly
+ *    on their device, committing atomic RTDB flags (`confirmed: true`, `status: true`) and
+ *    closing the Firestore order lifecycle (`status: "completed"`).
+ * 
+ * @module Components/ActiveOrderTracker
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
 import { ref, onValue, update } from "firebase/database";
 import { db, rtdb } from "../firebase";
 
+/**
+ * ActiveOrderTracker Component
+ * 
+ * @param {Object} props
+ * @param {string|null} props.activeOrderId - Active order document ID stored in browser session
+ * @param {Function} props.setActiveOrderId - State dispatcher to clear or update active order ID
+ * @returns {React.ReactElement|null} Floating bottom tracker card or null if no active order
+ */
 const ActiveOrderTracker = ({ activeOrderId, setActiveOrderId }) => {
   const [activeOrder, setActiveOrder] = useState(null);
   const [robotState, setRobotState] = useState(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // Listen to the customer's active order in Firestore
+  // Firestore Realtime Subscription: Tracks ticket status lifecycle ('new' -> 'progress' -> 'ready' -> 'completed')
   useEffect(() => {
     if (!activeOrderId) {
       setActiveOrder(null);

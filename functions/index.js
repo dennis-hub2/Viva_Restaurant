@@ -1,11 +1,45 @@
+/**
+ * @file index.js
+ * @description Cloud Functions for Serverless Robot Dispatching and Background Order Synchronization.
+ * 
+ * Thesis Context:
+ * In a distributed cyber-physical dining ecosystem, background cloud triggers can autonomously evaluate
+ * kitchen order states and schedule robot delivery runs.
+ * 
+ * Architectural Highlights:
+ * 1. Transactional Concurrency: Uses RTDB transactions to prevent duplicate dispatch collisions.
+ * 2. Unidirectional Route Sequencing: Enforces sequential perimeter routing along tables 1 to 4.
+ * 3. Operational Mode Flexibility: While fully autonomous event-driven triggers (`syncReadyOrders`,
+ *    `dispatchQueuedOrdersWhenRobotIdle`) are implemented, manual KDS dispatch mode is active by default
+ *    to give kitchen expeditors explicit physical oversight over dish placement onto the robot tray.
+ * 
+ * @module functions
+ * @author Thesis Research Team
+ */
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
+// Initialize Firebase Admin SDK with default server credentials
 admin.initializeApp();
 
+/**
+ * Identifier of the managed autonomous robotic delivery vehicle.
+ * @constant {string}
+ */
 const ROBOT_ID = "swagbot1";
+
+/**
+ * Invariant sequence of table stations along the delivery perimeter.
+ * @constant {string[]}
+ */
 const TABLES = ["table1", "table2", "table3", "table4"];
 
+/**
+ * Factory for creating clean table station sub-document state.
+ * 
+ * @returns {{mission: string, status: boolean, arrived: boolean, confirmed: boolean}}
+ */
 function tableState() {
   return {
     mission: "idle",
@@ -15,6 +49,11 @@ function tableState() {
   };
 }
 
+/**
+ * Constructs the default idle telemetry state for the robot node in RTDB.
+ * 
+ * @returns {Object} Complete idle robot state schema
+ */
 function buildIdleRobotState() {
   return {
     current_location: "docking",
@@ -29,6 +68,12 @@ function buildIdleRobotState() {
   };
 }
 
+/**
+ * Normalizes and extracts the table identifier string (e.g. 'table1') from an order document.
+ * 
+ * @param {Object} [order={}] - Firestore order document data
+ * @returns {string|null} Valid table station identifier or null
+ */
 function getOrderTableName(order = {}) {
   const rawTable = order.tableName || order.table || order.tableNumber;
   if (rawTable == null) return null;
@@ -40,12 +85,24 @@ function getOrderTableName(order = {}) {
   return TABLES.includes(tableName) ? tableName : null;
 }
 
+/**
+ * Sorts table stations in perimeter sequence order: Table 1 -> Table 2 -> Table 3 -> Table 4.
+ * 
+ * @param {string[]} route - Array of table station identifiers
+ * @returns {string[]} Monotonically sorted, deduplicated route
+ */
 function sortRoute(route) {
   return [...new Set(route)].sort(
     (left, right) => TABLES.indexOf(left) - TABLES.indexOf(right),
   );
 }
 
+/**
+ * Sanitizes arbitrary route input formats (arrays or key-value dictionaries).
+ * 
+ * @param {Array|Object|null} route - Raw route data
+ * @returns {string[]} Validated, sequential table array
+ */
 function normalizeRouteValue(route) {
   const routeValues = Array.isArray(route)
     ? route
@@ -62,6 +119,12 @@ function normalizeRouteValue(route) {
   );
 }
 
+/**
+ * Evaluates whether the robot is eligible to embark on a delivery journey.
+ * 
+ * @param {Object} [robot={}] - Current robot state snapshot from RTDB
+ * @returns {boolean} True if robot is idle/docked and ready for movement
+ */
 function canStartTrip(robot = {}) {
   const status = robot.trip_status || "docking";
   return (
@@ -71,6 +134,13 @@ function canStartTrip(robot = {}) {
   );
 }
 
+/**
+ * Generates the updated RTDB trip payload flagging designated destination stations.
+ * 
+ * @param {Object} [currentRobot={}] - Existing robot state
+ * @param {string[]} [route=[]] - Delivery route sequence
+ * @returns {Object} Merged trip state ready for RTDB commit
+ */
 function buildTripState(currentRobot = {}, route = []) {
   const nextRobot = {
     ...buildIdleRobotState(),
@@ -94,6 +164,12 @@ function buildTripState(currentRobot = {}, route = []) {
   return nextRobot;
 }
 
+/**
+ * Serverless batch dispatcher: scans Firestore for tickets with status 'ready'
+ * and initiates an atomic robot trip via RTDB transaction if the robot is idle.
+ * 
+ * @returns {Promise<null>}
+ */
 async function dispatchReadyOrdersIfPossible() {
   const firestore = admin.firestore();
   const robotRef = admin.database().ref(ROBOT_ID);
@@ -128,7 +204,7 @@ async function dispatchReadyOrdersIfPossible() {
     const transaction = await robotRef.transaction((current) => {
       const currentRobot = current || buildIdleRobotState();
       if (!canStartTrip(currentRobot)) {
-        return;
+        return; // Abort transaction if concurrent modification occurred
       }
 
       return buildTripState(currentRobot, route);
@@ -156,7 +232,12 @@ async function dispatchReadyOrdersIfPossible() {
   return null;
 }
 
-// Note: Auto-dispatch triggers disabled. Robot delivery assignment is strictly manual from KDS.
+/**
+ * Cloud Function Trigger: Firestore `orders/{orderId}` onWrite.
+ * 
+ * Note: Automated auto-dispatch is currently bypassed in favor of explicit,
+ * staff-governed manual dispatch triggered directly from the Kitchen Display System (KDS).
+ */
 exports.syncReadyOrders = functions.firestore
   .document("orders/{orderId}")
   .onWrite(async () => {
@@ -164,6 +245,12 @@ exports.syncReadyOrders = functions.firestore
     return null;
   });
 
+/**
+ * Cloud Function Trigger: Realtime Database `${ROBOT_ID}/trip_status` onWrite.
+ * 
+ * Note: Autonomous re-dispatch upon robot docking is handled with manual safety oversight
+ * in the active thesis demonstration profile.
+ */
 exports.dispatchQueuedOrdersWhenRobotIdle = functions.database
   .ref(`${ROBOT_ID}/trip_status`)
   .onWrite(async () => {

@@ -1,9 +1,22 @@
 /**
- * Robot Navigation Data
- * Contains 'going' and 'returning' paths for each table.
- * Each path is an array of waypoint coordinates or commands.
+ * @file robotNavigation.js
+ * @description Coordinate Waypoints and Trajectory Models for Simulation and Digital Twin Visualization.
+ * 
+ * Thesis Context:
+ * In autonomous indoor service robotics, visual simulation and planar motion planning
+ * utilize discrete coordinate sequences to render path trajectories on dashboard canvases.
+ * This module defines the 2D planar kinematic path vectors (translations 'move' in arbitrary grid units
+ * and yaw rotations 'turn' in angular degrees) for outward journeys ('going') and return home loops ('returning')
+ * corresponding to tables 1 through 4.
+ * 
+ * @module data/robotNavigation
+ * @author Thesis Research Team
  */
 
+/**
+ * Trajectory coordinate and heading waypoint dictionary mapped by table index.
+ * @type {Object.<number, {name: string, going: Array<{type: string, x?: number, y?: number, angle?: number}>, returning: Array<{type: string, x?: number, y?: number, angle?: number}>}>}
+ */
 export const robotPaths = {
   1: {
     name: "Table 1",

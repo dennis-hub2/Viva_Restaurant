@@ -1,4 +1,15 @@
-// src/pages/Admin/components/MenuGrid.jsx
+/**
+ * @file MenuGrid.jsx
+ * @description Responsive Layout Grid for Catalog Dish Cards.
+ * 
+ * Thesis Context:
+ * Organizes menu item cards in a multi-column responsive grid adapted for desktop
+ * and tablet administration workstations.
+ * 
+ * @module pages/Admin/components/MenuGrid
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import MenuCard from "./MenuCard";
 

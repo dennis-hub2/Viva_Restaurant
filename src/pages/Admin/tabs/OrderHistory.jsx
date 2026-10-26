@@ -1,3 +1,16 @@
+/**
+ * @file OrderHistory.jsx
+ * @description Historical Fulfilled Ticket Log and Audit Trail.
+ * 
+ * Thesis Context:
+ * Provides archival visibility over historical restaurant orders completed through
+ * both manual handover and autonomous robotic delivery. Features search indexing by
+ * ticket ID and table number, itemized pricing breakdown, and completion timestamps.
+ * 
+ * @module pages/Admin/tabs/OrderHistory
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -8,6 +21,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+/**
+ * OrderHistory Component
+ * 
+ * @returns {React.ReactElement} Historical transaction audit view
+ */
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");

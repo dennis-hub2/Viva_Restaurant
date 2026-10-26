@@ -1,10 +1,33 @@
-// src/firebase.js
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // For your menu database
-import { getAuth } from "firebase/auth"; // For admin login
-import { getDatabase, ref, update } from "firebase/database"; // NEW: For live robot telemetry
+/**
+ * @file firebase.js
+ * @description Firebase SDK Initialization and Hardware-in-the-Loop Simulation Suite.
+ * 
+ * Thesis Context:
+ * Viva Restaurant utilizes a hybrid Cloud-Edge architecture:
+ * 1. Cloud Firestore: Scalable document store managing transactional business data,
+ *    including catalog menus, live customer orders, staff access records, and historical sales analytics.
+ * 2. Realtime Database (RTDB): Low-latency WebSocket data stream dedicated to edge telemetry,
+ *    sub-second state synchronization with the ESP32 microcontroller ('swagbot1'), and waiter live tracking.
+ * 3. Firebase Authentication: Role-based identity management for kitchen staff and administrators.
+ * 4. Simulation Engine (`window.simulator`): Developer console test harness allowing comprehensive
+ *    validation and demonstration of the complete order-to-delivery lifecycle without requiring
+ *    physical robotics hardware connected during academic evaluation.
+ * 
+ * @module firebase
+ * @author Thesis Research Team
+ */
 
-// Pulling your keys safely from the .env file
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getDatabase, ref, update } from "firebase/database";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { get } from "firebase/database";
+
+/**
+ * Firebase Client Configuration Object loaded from Vite environment variables.
+ * @constant {Object}
+ */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,29 +38,58 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
+// Initialize the primary Firebase Application instance
 const app = initializeApp(firebaseConfig);
 
-// Initialize services and export them so other files can use them
+/**
+ * Cloud Firestore instance for transactional data (Orders, Menus, Analytics, Users).
+ * @type {import('firebase/firestore').Firestore}
+ */
 export const db = getFirestore(app);
+
+/**
+ * Firebase Authentication instance for secure role-based access.
+ * @type {import('firebase/auth').Auth}
+ */
 export const auth = getAuth(app);
+
+/**
+ * Firebase Realtime Database instance for low-latency robot telemetry.
+ * @type {import('firebase/database').Database}
+ */
 export const rtdb = getDatabase(app);
-export { ref, update }; // NEW: Export RTDB utilities
 
-// --- SIMULATION HELPER FOR F12 DEVELOPER CONSOLE ---
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { get } from "firebase/database";
+// Export RTDB utility references for modular consumption
+export { ref, update };
 
+// ============================================================================
+// SIMULATION HARNESS FOR THESIS EVALUATION & DEMONSTRATIONS (F12 CONSOLE)
+// ============================================================================
+
+/**
+ * Hardware-in-the-Loop Simulation Harness exposed globally on `window.simulator`.
+ * Allows academic reviewers and testers to emulate physical robot progression
+ * and multi-agent state synchronization from the browser developer console.
+ */
 window.simulator = {
+  /**
+   * Prints the interactive guide and list of available simulation methods to the browser console.
+   */
   help: () => {
-    console.log("%c--- ROBOT WORKFLOW SIMULATOR ---", "color: #6539A3; font-weight: bold; font-size: 14px;");
-    console.log("Run the following commands to simulate the delivery lifecycle:");
-    console.log("1. simulator.createReadyOrder(X)  - Creates a new ready order in Firestore for table number X.");
-    console.log("2. simulator.robotArrive(X)       - Simulates the robot arriving at table number X (RTDB updates).");
-    console.log("3. simulator.waiterConfirm(X)     - Simulates confirming the delivery at table number X.");
-    console.log("4. simulator.robotDock()          - Simulates the robot returning to docking and resetting to idle.");
+    console.log("%c--- ROBOT WORKFLOW SIMULATOR (THESIS SUITE) ---", "color: #6539A3; font-weight: bold; font-size: 14px;");
+    console.log("Run the following commands in the console to simulate the robotic delivery lifecycle:");
+    console.log("1. simulator.createReadyOrder(X)  - Creates a synthetic ready order in Firestore for table number X (e.g. 1).");
+    console.log("2. simulator.robotArrive(X)       - Emulates ESP32 IR sensor trip: robot arrives at table X in RTDB.");
+    console.log("3. simulator.waiterConfirm(X)     - Emulates waiter/customer delivery confirmation at table X.");
+    console.log("4. simulator.robotDock()          - Emulates robot docking completion, resetting state to idle.");
   },
 
+  /**
+   * Generates a mock order with status 'ready' in Cloud Firestore for a specified dining table.
+   * 
+   * @param {number|string} tableNumber - Table number to generate the order for (1-4)
+   * @returns {Promise<void>}
+   */
   createReadyOrder: async (tableNumber) => {
     const tableStr = `table${tableNumber}`;
     console.log(`[Simulator] Creating ready order for Table ${tableNumber}...`);
@@ -59,6 +111,13 @@ window.simulator = {
     }
   },
 
+  /**
+   * Emulates the physical ESP32 robot triggering the IR marker at a target table station.
+   * Updates RTDB telemetry: `current_location`, `trip_status: "waiting_confirmation"`, and `tableX/arrived: true`.
+   * 
+   * @param {number|string} tableNumber - Destination table number (1-4)
+   * @returns {Promise<void>}
+   */
   robotArrive: async (tableNumber) => {
     const tableName = `table${tableNumber}`;
     console.log(`[Simulator] Simulating robot arrival at ${tableName}...`);
@@ -75,6 +134,14 @@ window.simulator = {
     }
   },
 
+  /**
+   * Emulates customer or waitstaff confirming meal receipt at the designated table station.
+   * If the current table is the final stop in the active route, initiates automatic return-to-base (`home: true`).
+   * Otherwise, transitions status to `en_route` towards subsequent stations.
+   * 
+   * @param {number|string} tableNumber - Station table number (1-4)
+   * @returns {Promise<void>}
+   */
   waiterConfirm: async (tableNumber) => {
     const tableName = `table${tableNumber}`;
     console.log(`[Simulator] Simulating waiter confirmation for ${tableName}...`);
@@ -106,6 +173,12 @@ window.simulator = {
     }
   },
 
+  /**
+   * Emulates the physical ESP32 returning to the docking base station.
+   * Resets all table mission flags, clears active routes, and restores `trip_status` to `"idle"`.
+   * 
+   * @returns {Promise<void>}
+   */
   robotDock: async () => {
     console.log("[Simulator] Simulating robot returning to docking...");
     try {
@@ -136,7 +209,7 @@ window.simulator = {
   }
 };
 
-// Log simulator availability
+// Announce simulation harness availability in the developer console after initialization
 setTimeout(() => {
   window.simulator.help();
 }, 2000);

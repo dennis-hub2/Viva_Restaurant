@@ -1,3 +1,15 @@
+/**
+ * @file EditItemModel.jsx
+ * @description Catalog Dish Mutation and Property Modification Modal.
+ * 
+ * Thesis Context:
+ * Facilitates real-time price adjustments, stock replenishment, and description updates
+ * committed directly to Cloud Firestore document snapshots.
+ * 
+ * @module pages/Admin/components/EditItemModel
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 
 const FormInput = ({ label, value, onChange, type = "text" }) => (

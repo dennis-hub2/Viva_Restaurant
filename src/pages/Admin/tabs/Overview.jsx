@@ -1,3 +1,18 @@
+/**
+ * @file Overview.jsx
+ * @description Executive Overview Dashboard Tab with Live Metrics and Order Activity.
+ * 
+ * Thesis Context:
+ * Aggregates real-time operational KPIs for the current dining shift:
+ * - Gross shift revenue calculation in Ghanaian Cedis (₵).
+ * - Total orders received and fulfilled throughput.
+ * - Concurrently occupied dining tables.
+ * - Live incoming ticket stream.
+ * 
+ * @module pages/Admin/tabs/Overview
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import StatCard from "../components/StatCard";
 import LiveOrders from "../components/LiveOrders";
@@ -10,6 +25,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+/**
+ * OverviewTab Component
+ * 
+ * @returns {React.ReactElement} High-level executive dashboard view
+ */
 const OverviewTab = () => {
   const [stats, setStats] = useState({
     revenue: 0,

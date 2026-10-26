@@ -1,3 +1,15 @@
+/**
+ * @file FoodCard.jsx
+ * @description Promotional Food Showcase Card Component.
+ * 
+ * Thesis Context:
+ * Renders culinary highlights in promotional carousels and top-picks sections with
+ * circular dish imagery, user ratings, and pricing formatted in Ghanaian Cedis (₵).
+ * 
+ * @module Components/FoodCard
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { StarIcon } from "./icons/Icons";
 

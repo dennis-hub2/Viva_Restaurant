@@ -1,7 +1,17 @@
-// src/pages/Admin/components/MenuCard.jsx
+/**
+ * @file MenuCard.jsx
+ * @description Administrative Food Item Card with Modification Triggers.
+ * 
+ * Thesis Context:
+ * Displays dish details in the admin menu management grid, exposing direct triggers
+ * for updating pricing, adjusting stock, or initiating item deletion.
+ * 
+ * @module pages/Admin/components/MenuCard
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 
-// Destructure onEdit and onDelete from props
 const MenuCard = ({ item, onEdit, onDelete }) => {
   return (
     <div className="bg-gradient-to-br from-[#404046] to-[#333338] rounded-3xl p-5 shadow-xl border border-white/10 relative group transition-all hover:-translate-y-1">

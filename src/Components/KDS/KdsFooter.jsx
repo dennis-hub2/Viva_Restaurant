@@ -1,6 +1,28 @@
+/**
+ * @file KdsFooter.jsx
+ * @description Kitchen Display System Footer with Ticket Search and Volume Counters.
+ * 
+ * Thesis Context:
+ * Displays aggregate operational metrics (pending ticket volume, actively preparing counts)
+ * and ticket search filter input for rapid identification in high-volume dining environments.
+ * 
+ * @module Components/KDS/KdsFooter
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { Search, Cpu } from "lucide-react";
 
+/**
+ * KdsFooter Component
+ * 
+ * @param {Object} props
+ * @param {string} props.searchQuery - Current search query string
+ * @param {Function} props.setSearchQuery - Search state dispatcher
+ * @param {number} props.pendingCount - Count of new pending orders
+ * @param {number} props.preppingCount - Count of in-progress kitchen orders
+ * @returns {React.ReactElement} Footer status bar element
+ */
 export default function KdsFooter({
   searchQuery,
   setSearchQuery,

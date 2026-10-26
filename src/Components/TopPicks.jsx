@@ -1,3 +1,14 @@
+/**
+ * @file TopPicks.jsx
+ * @description Archived Top Picks Promotional Component.
+ * 
+ * Thesis Context:
+ * Maintained as an archival reference component for alternative promotional food displays.
+ * 
+ * @module Components/TopPicks
+ * @author Thesis Research Team
+ */
+
 // import React from "react";
 // import FoodCard from "./FoodCard";
 

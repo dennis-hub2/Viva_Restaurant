@@ -1,3 +1,21 @@
+/**
+ * @file menuData.jsx
+ * @description Static Fallback Menu Catalog and Culinary Classification Schema.
+ * 
+ * Thesis Context:
+ * Serves as the offline fallback data fixture and initial seed schema for restaurant
+ * dining catalog items. When Firestore connectivity is initialized, live items are
+ * queried dynamically, but this schema defines the structural contract for dish properties:
+ * name, description, price, rating, preparation latency, popularity flag, category, and asset URI.
+ * 
+ * @module data/menuData
+ * @author Thesis Research Team
+ */
+
+/**
+ * Standard culinary categories supported across the ordering interface.
+ * @type {string[]}
+ */
 export const categories = [
   "All",
   "Burgers",
@@ -10,6 +28,10 @@ export const categories = [
   "Desserts",
 ];
 
+/**
+ * Baseline catalog records utilized for development, offline testing, and initial database seeding.
+ * @type {Array<{id: number, name: string, desc: string, price: number, rating: number, time: string, popular: boolean, image: string, category: string}>}
+ */
 export const menuData = [
   {
     id: 1,

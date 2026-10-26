@@ -1,8 +1,32 @@
+/**
+ * @file OrderCard.jsx
+ * @description Kitchen Ticket Card with Elapsed Preparation Timers and Robotic Dispatch Controls.
+ * 
+ * Thesis Context:
+ * Represents a single kitchen order in the KDS kanban board.
+ * Visualizes table number, elapsed cooking time, line items, and dynamic action buttons:
+ * - 'Start Prep': Transitions ticket from 'new' to 'progress'.
+ * - 'Ready': Marks ticket prepared and ready for handover.
+ * - 'Assign Robot': Initiates cyber-physical dispatch of SwagBot1 to the target station.
+ * 
+ * @module Components/KDS/OrderCard
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 import { Timestamp } from "firebase/firestore";
 import { Clock, Maximize2, Bot, AlertTriangle, ChevronRight, Send } from "lucide-react";
 import { assignRobotForOrder } from "../../robotDispatch";
 
+/**
+ * OrderCard Component
+ * 
+ * @param {Object} props
+ * @param {Object} props.order - Firestore order ticket data
+ * @param {Function} props.onAction - Action callback handler
+ * @param {Date} props.currentTime - Current synchronized system timestamp
+ * @returns {React.ReactElement} Individual ticket card element
+ */
 function OrderCard({ order, onAction, currentTime }) {
   const items = order.items || [];
 

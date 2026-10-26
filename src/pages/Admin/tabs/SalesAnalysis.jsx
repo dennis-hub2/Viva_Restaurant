@@ -1,8 +1,27 @@
+/**
+ * @file SalesAnalysis.jsx
+ * @description Revenue Analytics, Category Performance, and Historical Sales Breakdown.
+ * 
+ * Thesis Context:
+ * Processes historical transaction records from Cloud Firestore to generate business analytics:
+ * - Gross revenue and average ticket order value in Ghanaian Cedis (₵).
+ * - Categorical sales distribution (Burgers, Pasta, Sushi, Ramen, etc.).
+ * - Volume trends across dining intervals.
+ * 
+ * @module pages/Admin/tabs/SalesAnalysis
+ * @author Thesis Research Team
+ */
+
 import React, { useState, useEffect } from "react";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../../../firebase";
 import StatCard from "../components/StatCard";
 
+/**
+ * SalesAnalysis Component
+ * 
+ * @returns {React.ReactElement} Financial analytics dashboard view
+ */
 const SalesAnalysis = () => {
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({

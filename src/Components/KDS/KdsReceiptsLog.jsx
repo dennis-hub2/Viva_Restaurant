@@ -1,5 +1,27 @@
+/**
+ * @file KdsReceiptsLog.jsx
+ * @description Master Receipts and Kitchen Transaction Ledger.
+ * 
+ * Thesis Context:
+ * Provides tabular visualization of culinary receipts combining active queue tickets
+ * and historical completions, allowing staff to audit timestamps and meal fulfillment status.
+ * 
+ * @module Components/KDS/KdsReceiptsLog
+ * @author Thesis Research Team
+ */
+
 import React from "react";
 
+/**
+ * KdsReceiptsLog Component
+ * 
+ * @param {Object} props
+ * @param {Array<Object>} props.orders - Currently active kitchen orders
+ * @param {Array<Object>} props.completedList - Completed orders list
+ * @param {string} props.searchQuery - Ticket query filter
+ * @param {Function} props.setSelectedOrder - Callback to view order details
+ * @returns {React.ReactElement} Ledger view container
+ */
 export default function KdsReceiptsLog({
   orders,
   completedList,
